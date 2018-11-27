@@ -17,6 +17,7 @@ PASSWORD = e5P2kgnv
 
 
 def HESSwebAPIcall(varUtility, varXfid, varStartdate, varStarttime, varEnddate, varEndtime, varEnhanced, varUser, varPassword):
+#def HESSwebAPIcall(varUtility, varXfid, varStarttime, varEndtime, varEnhanced, varUser, varPassword):
 
     # Print out Web API Request
     print("\n")
@@ -37,18 +38,20 @@ def HESSwebAPIcall(varUtility, varXfid, varStartdate, varStarttime, varEnddate, 
     # Make get request to HESS web API
     response = requests.get("https://hess.grid2020.com/HESS/getXFcsv.jsp", params=parameters)
 
-    # Print the status of the server response
+    # Print the status of the server response 
+    # https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+    # 200 OK
     print("Server Response Status Code: {0}".format(response.status_code))
 
     # Print the content of the server response
     print("Server Response Content: {0}".format(response.content))
 
     # Download .csv data
-    newFileName = 'DataFile_XF'+str(varXfid)+'-'+str(varStartdate)+'to'+str(varEnddate)+'.csv'
+    newFileName = 'data_XF'+str(varXfid)+'-'+str(varStartdate)+'to'+str(varEnddate)+'.csv'
     print(newFileName)
     urllib.request.urlretrieve(csvUrl, newFileName)
 
-    # Moves downloaded .CSV file to Box directory
+    # Moves downloaded .CSV file to new directory
     from HESS_File_Move import HESSfilemove
 
     HESSfilemove(newFileName)
