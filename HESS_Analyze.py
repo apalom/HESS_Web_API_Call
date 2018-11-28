@@ -23,21 +23,31 @@ dataRaw = pd.read_csv(path1 + file)
 
 data = dataRaw
 
-colNames = ['TIME', 'DAY', 'KWH', 'KVAH', 'KVA', 'KW', 'KVAR' ,'VRMSA', 'IRMSA', 'ANGLEA']
+colNames = ['TIME', 'DAY', 'WEEKDAY', 'KWH', 'KWHadded', 'KVAH', 'KVA', 'KW', 'KVAR' ,'VRMSA', 'IRMSA', 'ANGLEA']
 
 data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
 
 data.TIME = pd.to_datetime(data.TIME)
 
-days = np.zeros((len(data),1))
+days = np.zeros((len(data),2))
+energyAdded = np.zeros((len(data),1))
 
 for idx, row in data.iterrows():
-    days[idx] = row.TIME.dayofyear
+    days[idx][0] = row.TIME.dayofyear
+    days[idx][1] = row.TIME.weekday()
+    if idx < (len(data)-1):
+        energy = data.KWH[idx+1] - data.KWH[idx] 
+        if energy < 20: 
+            energyAdded[idx] = energy;
+        
 
-data.DAY = days;
+data.DAY = days[:,0];
+#Return the day of the week represented by the date. Monday == 0 … Sunday == 6
+data.WEEKDAY = days[:,1];
 data.KVA = 3*(data.VRMSA*data.IRMSA)/1000;
 data.KW = 3*(data.VRMSA*data.IRMSA)*(np.cos(data.ANGLEA*np.pi/180))/1000;
 data.KVAR = 3*(data.VRMSA*data.IRMSA)*(np.sin(data.ANGLEA*np.pi/180))/1000;
+data.KWHadded = energyAdded;
 
 dataHead = data.head(100)
 
@@ -93,5 +103,15 @@ n, bins, patches = plt.hist(dayKWH, bins=binEdges, density=True, rwidth=0.75, co
 plt.xlabel('Daily Energy (kWh)')
 plt.ylabel('Frequency')
 plt.title('Energy Per Day')
+
+
+#%% Plot Violin Plot 
+
+import seaborn as sns
+
+dataON = data.loc[data.KWHadded > 0]
+
+ax = sns.violinplot(x='WEEKDAY', y='KWHadded', data=dataON)
+
 
 
