@@ -16,7 +16,7 @@ import time
 #%% Import System Data
 
 path1 = 'exports\\'
-file = '\\data_KJbus-2018-01-01to2018-04-01.csv'
+file = '\\data_KJ_Bus-2017-09-01to2018-12-01.csv'
 
 # Import Data
 dataRaw = pd.read_csv(path1 + file)

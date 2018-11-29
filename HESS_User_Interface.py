@@ -10,7 +10,7 @@ timeMain = timeit.default_timer()
 
 
 var_utility = str(1063)
-var_xfid = str(1002)
+var_xfid = str(1001)
 
 '''
 # Define user inputs
@@ -22,9 +22,9 @@ utc_offset = input('Enter UTC Offset [MST = 0600]: ')
 '''
 
 # Define user inputs
-var_startdate = '2018-01-01'
+var_startdate = '2017-09-01'
 var_startclock = '00:00'
-var_enddate = '2018-04-01'
+var_enddate = '2018-01-15'
 var_endclock = '00:00'
 utc_offset = '0600'
 
