@@ -131,7 +131,12 @@ ax = sns.violinplot(x='WEEKDAY', y='KWHadded', data=dataON)
 # assume 30 min from leaving stop A to leaving stop B
 stEnergy = 126; #kWh
 route = 14.2; #miles
-eff = 0.5*(1.28+2.08);
-typicalDay = np.mean(dayKWH)
+eff = 0.5*(1.28+2.08); #kWh/mile operating efficiency
+typicalDay = np.median(dayKWH)
 
-milesPerDay = route * 17 * 2
+#17 hours of operation, 30 min each direction, so 17 total round trips 
+milesPerDay = route * 17; 
+kWhNeedPerBusDay = milesPerDay * eff; 
+
+#Assume 3 busses on route
+kWhNeedPerDay = 3 * kWhNeedPerBusDay;
