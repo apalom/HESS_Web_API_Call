@@ -10,47 +10,59 @@ from scipy.stats import mstats
 import matplotlib.pyplot as plt
 import pandas as pd
 from os import path
+import timeit
 import time
 
 
 #%% Import System Data
 
 path1 = 'exports\\'
-file = '\\data_KJ_Bus-2017-09-01to2018-12-01.csv'
+file = 'data_XF1001_Bus-2017-12-15to2018-01-15.csv'
 
 # Import Data
 dataRaw = pd.read_csv(path1 + file)
 
 data = dataRaw
 
-colNames = ['TIME', 'DAY', 'WEEKDAY', 'KWH', 'KWHadded', 'KVAH', 'KVA', 'KW', 'KVAR' ,'VRMSA', 'IRMSA', 'ANGLEA']
+#%% Analyze Data
+
+tST= timeit.default_timer()
+
+colNames = ['TIME', 'DAY', 'WEEKDAY', 'KWH', 'KWHadded', 'KVAH', 'KVA', 'KW', 'KVAR', 'PF','VRMSA', 'IRMSA', 'ANGLEA']
 
 data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
 
 data.TIME = pd.to_datetime(data.TIME)
 
-days = np.zeros((len(data),2))
-energyAdded = np.zeros((len(data),1))
+days = np.zeros((len(data),2));
+energyAdded = np.zeros((len(data),1));
+allPF = np.zeros((len(data),1));
+
+data.KVA = 3*(data.VRMSA*data.IRMSA)/1000;
+data.KW = 3*(data.VRMSA*data.IRMSA)*(np.cos(data.ANGLEA*np.pi/180))/1000;
+data.KVAR = 3*(data.VRMSA*data.IRMSA)*(np.sin(data.ANGLEA*np.pi/180))/1000;
 
 for idx, row in data.iterrows():
     days[idx][0] = row.TIME.dayofyear
     days[idx][1] = row.TIME.weekday()
+    if row.KW != 0:
+        allPF[idx] = np.cos(np.arctan(row.KVAR/row.KW))
     if idx < (len(data)-1):
         energy = data.KWH[idx+1] - data.KWH[idx] 
-        if energy < 20: 
-            energyAdded[idx] = energy;
+        energyAdded[idx] = energy;
+        #if energy < 20: 
+        #    energyAdded[idx] = energy;
         
-
 data.DAY = days[:,0];
 #Return the day of the week represented by the date. Monday == 0 … Sunday == 6
 data.WEEKDAY = days[:,1];
-data.KVA = 3*(data.VRMSA*data.IRMSA)/1000;
-data.KW = 3*(data.VRMSA*data.IRMSA)*(np.cos(data.ANGLEA*np.pi/180))/1000;
-data.KVAR = 3*(data.VRMSA*data.IRMSA)*(np.sin(data.ANGLEA*np.pi/180))/1000;
 data.KWHadded = energyAdded;
+data.PF = allPF;
 
 dataHead = data.head(100)
 
+tEl = timeit.default_timer() - tST
+print('Analysis Time: {0:.4f} sec'.format(tEl))
 
 #%% Histogram 
 
@@ -113,5 +125,10 @@ dataON = data.loc[data.KWHadded > 0]
 
 ax = sns.violinplot(x='WEEKDAY', y='KWHadded', data=dataON)
 
+#%% Plot Violin Plot
 
+# 20 minutes each direction
+stEnergy = 126; #kWh
+route = 14.2; #miles
+eff = 0.5*(1.28+2.08);
 
