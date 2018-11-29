@@ -74,7 +74,7 @@ for i in range(len(allEnergy)-1):
     seshKWH[i] = allEnergy[i+1] - allEnergy[i]
 
 
-#%% Plot Histogram 
+#%% Plot seshKWH Histogram 
 
 import matplotlib.pyplot as plt
 
@@ -103,12 +103,12 @@ for day in allDays:
     dayKWH[i] = dayEnergy;
     i += 1;
 
-#%% Plot Histogram 
+#%% Plot dayKWH Histogram 
 
 import matplotlib.pyplot as plt
 
-maxBin = 150;
-binEdges = np.arange(0,maxBin,10)
+maxBin = 4500;
+binEdges = np.arange(0,maxBin,500)
 
 n, bins, patches = plt.hist(dayKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
                             
@@ -127,8 +127,11 @@ ax = sns.violinplot(x='WEEKDAY', y='KWHadded', data=dataON)
 
 #%% Plot Violin Plot
 
-# 20 minutes each direction
+# 20 driving minutes each direction from 7am to 11:59p = 17 hrs
+# assume 30 min from leaving stop A to leaving stop B
 stEnergy = 126; #kWh
 route = 14.2; #miles
 eff = 0.5*(1.28+2.08);
+typicalDay = np.mean(dayKWH)
 
+milesPerDay = route * 17 * 2
