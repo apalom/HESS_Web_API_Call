@@ -121,11 +121,19 @@ plt.title('Energy Per Day')
 
 import seaborn as sns
 
-dataON = data.loc[data.KWHadded > 0]
+dataON = data.loc[data.KWHadded > 0.5]
 
 ax = sns.violinplot(x='WEEKDAY', y='KWHadded', data=dataON)
 
-#%% Plot Violin Plot
+days = ['Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
+
+plt.xlabel('Weekeday')
+plt.xticks(np.arange(7), days)
+plt.ylabel('Energy (kWh)')
+plt.title('Energy Per Session')
+
+
+#%% Driving Energy
 
 # 20 driving minutes each direction from 7am to 11:59p = 17 hrs
 # assume 30 min from leaving stop A to leaving stop B
@@ -133,9 +141,11 @@ stEnergy = 126; #kWh
 route = 14.2; #miles
 eff = 0.5*(1.28+2.08); #kWh/mile operating efficiency
 typicalDay = np.median(dayKWH)
+typicalBus = typicalDay/3;
 
 #17 hours of operation, 30 min each direction, so 17 total round trips 
 milesPerDay = route * 17; 
+kWhperRoute = route * eff;
 kWhNeedPerBusDay = milesPerDay * eff; 
 
 #Assume 3 busses on route
