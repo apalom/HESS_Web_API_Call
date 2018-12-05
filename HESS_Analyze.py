@@ -83,7 +83,7 @@ print('Analysis Time: {0:.4f} sec'.format(tEl))
 tST= timeit.default_timer()
 
 numSessions = int(np.max(data.SESSION));
-seshEnergy = np.zeros((numSessions,1))
+seshEnergy = np.zeros((numSessions,2))
 idx = 0;
 
 for sesh in range(1, numSessions):
@@ -94,10 +94,13 @@ for sesh in range(1, numSessions):
         
         print(sesh, ': ', seshKWH, 'kWh' )
         
-        seshEnergy[idx] = seshKWH;
+        seshEnergy[idx][0] = seshKWH;
+        seshEnergy[idx][1] = dfTemp.iloc[0].WEEKDAY;
         idx += 1;
 
-seshEnergy = seshEnergy[np.where( seshEnergy > 0.5 )];
+
+dfSeshEnergy = pd.DataFrame(seshEnergy, index=np.arange(len(seshEnergy)), columns=['KWH', 'WEEKDAY'])
+dfSeshEnergy = dfSeshEnergy.loc[dfSeshEnergy.KWH > 0.5];
 
 tEl = timeit.default_timer() - tST
 print('Energy Session: {0:.4f} sec'.format(tEl))
@@ -107,8 +110,8 @@ print('Energy Session: {0:.4f} sec'.format(tEl))
 import matplotlib.pyplot as plt
 
 #maxBin = np.ceil(np.max(seshKWH)) + 0.5;
-maxBin = 150;
-binEdges = np.arange(0, maxBin, 5)
+maxBin = 80;
+binEdges = np.arange(0, maxBin, 2.5)
 
 n, bins, patches = plt.hist(seshEnergy, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
                             
@@ -176,9 +179,9 @@ plt.title('Energy Per Day')
 
 import seaborn as sns
 
-dataON = data.loc[data.KWHadded > 0.5]
+#dataON = data.loc[data.KWHadded > 0.5]
 
-ax = sns.violinplot(x='WEEKDAY', y='KWHadded', data=dataON)
+ax = sns.violinplot(x='WEEKDAY', y='KWH', data=dfSeshEnergy)
 
 days = ['Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
 
@@ -206,5 +209,6 @@ kWhNeedPerBusDay = milesPerDay * eff;
 #Assume 3 busses on route
 kWhNeedPerDay = 3 * kWhNeedPerBusDay;
 
-#%%
+#%% Export data 
 
+data.to_csv('outputFile.csv')
