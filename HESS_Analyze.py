@@ -87,7 +87,7 @@ n, bins, patches = plt.hist(seshKWH, bins=binEdges, density=True, rwidth=0.75, c
 plt.xlabel('Session Energy (kWh)')
 plt.xticks(np.arange(0,maxBin+1,1))
 plt.ylabel('Frequency')
-plt.title('Energy Per Session')
+plt.title('Energy Per Minute')
 
 
 #%% Sessions Per Day
