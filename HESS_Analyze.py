@@ -78,12 +78,12 @@ dataHead = data.head(100)
 tEl = timeit.default_timer() - tST
 print('Analysis Time: {0:.4f} sec'.format(tEl))
 
-#%% Calculate Session Energy
+#%% Calculate Session Energy and Duration 
 
 tST= timeit.default_timer()
 
 numSessions = int(np.max(data.SESSION));
-seshEnergy = np.zeros((numSessions,2))
+seshEnergy = np.zeros((numSessions,3))
 idx = 0;
 
 for sesh in range(1, numSessions):
@@ -96,10 +96,11 @@ for sesh in range(1, numSessions):
         
         seshEnergy[idx][0] = seshKWH;
         seshEnergy[idx][1] = dfTemp.iloc[0].WEEKDAY;
+        seshEnergy[idx][2] = len(dfTemp);
         idx += 1;
 
 
-dfSeshEnergy = pd.DataFrame(seshEnergy, index=np.arange(len(seshEnergy)), columns=['KWH', 'WEEKDAY'])
+dfSeshEnergy = pd.DataFrame(seshEnergy, index=np.arange(len(seshEnergy)), columns=['KWH', 'WEEKDAY', 'TIME'])
 dfSeshEnergy = dfSeshEnergy.loc[dfSeshEnergy.KWH > 0.5];
 
 tEl = timeit.default_timer() - tST
@@ -113,13 +114,29 @@ import matplotlib.pyplot as plt
 maxBin = 80;
 binEdges = np.arange(0, maxBin, 2.5)
 
-n, bins, patches = plt.hist(seshEnergy, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
-                            
+n, bins, patches = plt.hist(dfSeshEnergy.KWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
+
 plt.xlabel('Energy (kWh)')
 #plt.xticks(np.arange(0,maxBin+1,1))
 plt.ylabel('Frequency')
 plt.title('Energy Per Session')
 
+print('Mean: ', np.mean(dfSeshEnergy.KWH), ' | Std: ', np.std(dfSeshEnergy.KWH))
+                            
+#%% Plot seshTime Histogram 
+
+test = dfSeshEnergy.loc[dfSeshEnergy.TIME < 30];
+          
+maxBin = 30;
+binEdges = np.arange(0, maxBin, 1)
+n, bins, patches = plt.hist(test.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727')                    
+                            
+plt.xlabel('Minutes')
+#plt.xticks(np.arange(0,maxBin+1,1))
+plt.ylabel('Frequency')
+plt.title('Session Duration')
+
+print('Mean: ', np.mean(test.TIME), ' | Std: ', np.std(test.TIME))
 
 #%% Calculate minute Energy 
 
@@ -165,7 +182,7 @@ for day in allDays:
 
 import matplotlib.pyplot as plt
 
-maxBin = 4500;
+maxBin = 5000;
 binEdges = np.arange(0,maxBin,500)
 
 n, bins, patches = plt.hist(dayKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
@@ -197,6 +214,7 @@ plt.title('Energy Per Session')
 # assume 30 min from leaving stop A to leaving stop B
 stEnergy = 126; #kWh
 route = 14.2; #miles
+#https://www.proterra.com/performance/range/
 eff = 0.5*(1.28+2.08); #kWh/mile operating efficiency
 typicalDay = np.median(dayKWH)
 typicalBus = typicalDay/3;
