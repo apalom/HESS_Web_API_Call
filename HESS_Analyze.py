@@ -52,7 +52,10 @@ for idx, row in data.iterrows():
     
     days[idx][0] = row.TIME.dayofyear;
     days[idx][1] = row.TIME.weekday();
+<<<<<<< HEAD
     days[idx][2] = row.TIME.hour; 
+=======
+>>>>>>> fbabd4c028f12cf215e16747dee99f245095bdfc
     if row.KW != 0:
         allPF[idx] = np.cos(np.arctan(row.KVAR/row.KW))
     if idx < (len(data)-1):
@@ -132,7 +135,11 @@ minVal = int(qE_low + (5 - qE_low) % 5) - 5
 binEdges = np.arange(minVal, maxVal, 1)
 numBins = int(np.sqrt(len(seshEnergy1)));
 
+<<<<<<< HEAD
 n, bins, patches = plt.hist(seshEnergy1.KWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e');
+=======
+n, bins, patches = plt.hist(seshEnergy1.KWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e', cumulative=True);
+>>>>>>> fbabd4c028f12cf215e16747dee99f245095bdfc
 
 plt.xlabel('Energy (kWh)')
 #plt.xticks(np.arange(minVal, maxVal, 5))
@@ -277,6 +284,7 @@ print('Load Factor: ', loadFactor);
 
 #%% Plot hourly KW profile as average of hourly load
 
+<<<<<<< HEAD
 tST= timeit.default_timer()
 
 #numSessions = int(np.max(data.SESSION));
@@ -297,6 +305,8 @@ plt.plot(hours, hrlyLoad)
 tEl = timeit.default_timer() - tST
 print('Energy Session: {0:.4f} sec'.format(tEl))
 
+=======
+>>>>>>> fbabd4c028f12cf215e16747dee99f245095bdfc
 
 #%% Export data 
 
