@@ -12,6 +12,7 @@ import pandas as pd
 from os import path
 import timeit
 import time
+import datetime
 
 
 #%% Import System Data
@@ -33,7 +34,11 @@ colNames = ['TIME', 'HOUR', 'DAY', 'WEEKDAY', 'KWH', 'KWHadded', 'SESSION', 'KVA
 data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
 
 data.TIME = pd.to_datetime(data.TIME)
+offset = datetime.timedelta(hours=6)
+data.TIME = data.TIME - offset
 
+
+#data.TIME.hour = data.TIME.hour - 6;
 days = np.zeros((len(data),3));
 energyAdded = np.zeros((len(data),1));
 allPF = np.zeros((len(data),1));
@@ -156,7 +161,7 @@ minVal = int(qT_low + (5 - qT_low) % 5) - 5
 binEdges = np.arange(minVal, maxVal, 1)
 numBins = int(np.sqrt(len(seshTime1)));
 
-n, bins, patches = plt.hist(seshTime1.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727', cumulative=True);                    
+n, bins, patches = plt.hist(seshTime1.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727', cumulative=False);                    
                             
 plt.xlabel('Minutes')
 #plt.xticks(np.arange(0,maxBin+1,1))
@@ -225,7 +230,7 @@ import seaborn as sns
 
 #dataON = data.loc[data.KWHadded > 0.5]
 
-ax = sns.violinplot(x='WEEKDAY', y='KWH', data=dfSeshEnergy)
+ax = sns.violinplot(x='WEEKDAY', y='KWH', data=seshEnergy1)
 
 days = ['Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
 
@@ -292,8 +297,14 @@ for hr in hours:
     
     idx += 1;
 
-#need 6 hour shift    
-plt.plot(hours, hrlyLoad)
+hours = np.arange(0,24)
+
+plt.bar(hours, hrlyLoad[:,0])
+
+plt.xlabel('Hour')
+plt.xticks(np.arange(0, 24, 2))
+plt.ylabel('Energy (kWh)')
+plt.title('Average Energy per Hour')
 
 tEl = timeit.default_timer() - tST
 print('Energy Session: {0:.4f} sec'.format(tEl))
