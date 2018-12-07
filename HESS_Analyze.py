@@ -28,8 +28,6 @@ data = dataRaw
 
 #%% Prep Data
 
-tST= timeit.default_timer()
-
 colNames = ['TIME', 'DAY', 'WEEKDAY', 'KWH', 'KWHadded', 'SESSION', 'KVAH', 'KVA', 'KW', 'KVAR', 'PF','VRMSA', 'IRMSA', 'ANGLEA']
 
 data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
@@ -48,6 +46,8 @@ result = [];
 
 #%% Analyze Data
 
+tST= timeit.default_timer()
+
 for idx, row in data.iterrows():
     
     days[idx][0] = row.TIME.dayofyear;
@@ -63,7 +63,7 @@ for idx, row in data.iterrows():
     seshCount[idx] = count;    
     
     if idx < len(data)-1:
-        if data.ANGLEA[idx] < 200 and data.ANGLEA[idx+1] > 200:            
+        if data.ANGLEA[idx] < 200 and data.ANGLEA[idx+1] > 200:
             result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
             print(idx)
             count = count + 1;
@@ -98,6 +98,7 @@ idx = 0;
 for sesh in range(1, numSessions):
     
     dfTemp = data.loc[data.SESSION == sesh];
+    
     if len(dfTemp) != 1:
         seshKWH = dfTemp.iloc[len(dfTemp)-1].KWH - dfTemp.iloc[0].KWH;
         
@@ -120,13 +121,15 @@ print('Energy Session: {0:.4f} sec'.format(tEl))
 import matplotlib.pyplot as plt
 
 #maxBin = np.ceil(np.max(seshKWH)) + 0.5;
-maxBin = 80;
-binEdges = np.arange(0, maxBin, 2.5)
+qE = dfSeshEnergy['TIME'].quantile(0.95); #remove 5% outlier
+seshTime1 = dfSeshEnergy.loc[dfSeshEnergy.TIME < qT];
+maxVal = int(qT + (5 - qT) % 5);
+
 
 n, bins, patches = plt.hist(dfSeshEnergy.KWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
 
 plt.xlabel('Energy (kWh)')
-#plt.xticks(np.arange(0,maxBin+1,1))
+plt.xticks(np.arange(0, maxVal, 10))
 plt.ylabel('Frequency')
 plt.title('Energy Per Session')
 
@@ -134,18 +137,22 @@ print('Mean: ', np.mean(dfSeshEnergy.KWH), ' | Std: ', np.std(dfSeshEnergy.KWH))
                             
 #%% Plot seshTime Histogram 
 
-test = dfSeshEnergy.loc[dfSeshEnergy.TIME < 30];
-          
-maxBin = 30;
-binEdges = np.arange(0, maxBin, 1)
-n, bins, patches = plt.hist(test.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727')                    
+#test = dfSeshEnergy.loc[dfSeshEnergy.TIME < 30];
+
+#val = np.max(test.TIME);
+qT = dfSeshEnergy['TIME'].quantile(0.95); #remove 5% outlier
+seshTime1 = dfSeshEnergy.loc[dfSeshEnergy.TIME < qT];
+maxVal = int(qT + (5 - qT) % 5);
+
+binEdges = np.arange(0, maxVal, 2.5)
+n, bins, patches = plt.hist(seshTime1.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727')                    
                             
 plt.xlabel('Minutes')
 #plt.xticks(np.arange(0,maxBin+1,1))
 plt.ylabel('Frequency')
 plt.title('Session Duration')
 
-print('Mean: ', np.mean(test.TIME), ' | Std: ', np.std(test.TIME))
+print('Mean: ', np.mean(seshTime1.TIME), ' | Std: ', np.std(seshTime1.TIME))
 
 #%% Calculate minute Energy 
 
