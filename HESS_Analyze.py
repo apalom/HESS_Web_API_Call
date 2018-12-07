@@ -272,6 +272,10 @@ loadFactor = totKWH/(numDays*24*peakKW);
 
 print('Load Factor: ', loadFactor);
 
+
+#%% Plot hourly KW profile as average of hourly load
+
+
 #%% Export data 
 
 data.to_csv('outputFile.csv')
