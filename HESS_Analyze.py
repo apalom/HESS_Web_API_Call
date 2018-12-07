@@ -121,31 +121,39 @@ print('Energy Session: {0:.4f} sec'.format(tEl))
 import matplotlib.pyplot as plt
 
 #maxBin = np.ceil(np.max(seshKWH)) + 0.5;
-qE = dfSeshEnergy['TIME'].quantile(0.95); #remove 5% outlier
-seshTime1 = dfSeshEnergy.loc[dfSeshEnergy.TIME < qT];
-maxVal = int(qT + (5 - qT) % 5);
+qE_high = dfSeshEnergy['KWH'].quantile(0.9545); #remove 2 std dev outlier
+qE_low = dfSeshEnergy['KWH'].quantile(1-0.9545); #remove 2 std dev outlier
+seshEnergy1 = dfSeshEnergy.loc[dfSeshEnergy.TIME < qE_high];
+seshEnergy1 = seshEnergy1.loc[dfSeshEnergy.TIME > qE_low];
+maxVal = int(qE_high + (5 - qE_high) % 5);
+minVal = int(qE_low + (5 - qE_low) % 5) - 5
+binEdges = np.arange(minVal, maxVal, 1)
+numBins = int(np.sqrt(len(seshEnergy1)));
 
-
-n, bins, patches = plt.hist(dfSeshEnergy.KWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
+n, bins, patches = plt.hist(seshEnergy1.KWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e', cumulative=True);
 
 plt.xlabel('Energy (kWh)')
-plt.xticks(np.arange(0, maxVal, 10))
+#plt.xticks(np.arange(minVal, maxVal, 5))
 plt.ylabel('Frequency')
 plt.title('Energy Per Session')
 
-print('Mean: ', np.mean(dfSeshEnergy.KWH), ' | Std: ', np.std(dfSeshEnergy.KWH))
+print('Mean: ', np.mean(seshEnergy1.KWH), ' | Std: ', np.std(seshEnergy1.KWH))
                             
 #%% Plot seshTime Histogram 
 
 #test = dfSeshEnergy.loc[dfSeshEnergy.TIME < 30];
 
 #val = np.max(test.TIME);
-qT = dfSeshEnergy['TIME'].quantile(0.95); #remove 5% outlier
-seshTime1 = dfSeshEnergy.loc[dfSeshEnergy.TIME < qT];
-maxVal = int(qT + (5 - qT) % 5);
+qT_high = dfSeshEnergy['TIME'].quantile(0.9545); #remove 2 std dev outlier
+qT_low = dfSeshEnergy['TIME'].quantile(1-0.9545); #remove 2 std dev outlier
+seshTime1 = dfSeshEnergy.loc[dfSeshEnergy.TIME < qT_high];
+seshTime1 = seshTime1.loc[dfSeshEnergy.TIME > qT_low];
+maxVal = int(qT_high + (5 - qT_high) % 5);
+minVal = int(qT_low + (5 - qT_low) % 5) - 5
+binEdges = np.arange(minVal, maxVal, 1)
+numBins = int(np.sqrt(len(seshTime1)));
 
-binEdges = np.arange(0, maxVal, 2.5)
-n, bins, patches = plt.hist(seshTime1.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727')                    
+n, bins, patches = plt.hist(seshTime1.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727', cumulative=True);                    
                             
 plt.xlabel('Minutes')
 #plt.xticks(np.arange(0,maxBin+1,1))
@@ -242,6 +250,27 @@ kWhNeedPerBusDay = milesPerDay * eff;
 
 #Assume 3 busses on route
 kWhNeedPerDay = 3 * kWhNeedPerBusDay;
+
+#%% Calculate Load Factor
+
+#1min Peak Load
+peakKW = np.max(data.KW);
+
+#3 or 5 min average
+m = 15;
+peakKW = np.sum(data.KW[0:m])
+for i in range(len(data)-m):
+    if np.sum(data.KW[i:i+m]) > peakKW:
+        peakKW = np.sum(data.KW[i:i+m])
+     
+peakKW = peakKW/m;   
+
+
+numDays = len(list(set(data.DAY)));
+totKWH = data.KWH[len(data)-1] - data.KWH[0];
+loadFactor = totKWH/(numDays*24*peakKW);
+
+print('Load Factor: ', loadFactor);
 
 #%% Export data 
 
