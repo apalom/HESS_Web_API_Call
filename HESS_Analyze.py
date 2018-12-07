@@ -16,15 +16,17 @@ import time
 
 #%% Import System Data
 
-path1 = 'exports\\'
-file = 'data_XF1001_Bus-2017-12-15to2018-01-15.csv'
-
+# Raw Data
+path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
 # Import Data
-dataRaw = pd.read_csv(path1 + file)
-
+dataRaw = pd.read_csv(path)
 data = dataRaw
 
-#%% Analyze Data
+# Prepped Data
+#path = 'exports\\outputFile01.csv'
+#data = pd.read_csv(path)
+
+#%% Prep Data
 
 tST= timeit.default_timer()
 
@@ -39,17 +41,17 @@ energyAdded = np.zeros((len(data),1));
 allPF = np.zeros((len(data),1));
 seshCount = np.zeros((len(data),1));
 
-
 data.KVA = 3*(data.VRMSA*data.IRMSA)/1000;
 data.KW = 3*(data.VRMSA*data.IRMSA)*(np.cos(data.ANGLEA*np.pi/180))/1000;
 data.KVAR = 3*(data.VRMSA*data.IRMSA)*(np.sin(data.ANGLEA*np.pi/180))/1000;
 result = [];
 
+#%% Analyze Data
+
 for idx, row in data.iterrows():
     
     days[idx][0] = row.TIME.dayofyear;
     days[idx][1] = row.TIME.weekday();
-    seshCount[idx] = count;
     if row.KW != 0:
         allPF[idx] = np.cos(np.arctan(row.KVAR/row.KW))
     if idx < (len(data)-1):
@@ -58,13 +60,19 @@ for idx, row in data.iterrows():
 
 count = 1;
 for idx, row in data.iterrows():
-    data.SESSION[idx] = count;    
+    seshCount[idx] = count;    
     
     if idx < len(data)-1:
-        if data.KWHadded[idx] < 1.0 and data.KWHadded[idx+1] > 1.0:            
+        if data.ANGLEA[idx] < 200 and data.ANGLEA[idx+1] > 200:            
             result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
             print(idx)
             count = count + 1;
+    
+#    if idx < len(data)-1:
+#        if data.KWHadded[idx] < 1.0 and data.KWHadded[idx+1] > 1.0:            
+#            result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
+#            print(idx)
+#            count = count + 1;
                       
             
 data.DAY = days[:,0];
@@ -72,6 +80,7 @@ data.DAY = days[:,0];
 data.WEEKDAY = days[:,1];
 data.KWHadded = energyAdded;
 data.PF = allPF;
+data.SESSION = seshCount;
 
 dataHead = data.head(100)
 
