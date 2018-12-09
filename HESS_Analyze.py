@@ -287,13 +287,18 @@ tST= timeit.default_timer()
 
 #numSessions = int(np.max(data.SESSION));
 hours = list(set(data.HOUR));
+hrlyData = np.zeros((24,4));
 hrlyLoad = np.zeros((len(hours),1));
 idx = 0;
 
 for hr in hours:
     
     dfTemp = data.loc[data.HOUR == hr];
-    hrlyLoad[idx] = np.average(dfTemp.KW)
+    # Calculate Mean
+    hrlyData[idx][0] = np.average(dfTemp.KW)
+        # Calculate Median
+    hrlyData[idx][0] = np.average(dfTemp.KW)
+    
     
     idx += 1;
 
