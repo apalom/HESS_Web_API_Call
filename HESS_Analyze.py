@@ -314,6 +314,45 @@ plt.title('Average Energy per Hour')
 tEl = timeit.default_timer() - tST
 print('Energy Session: {0:.4f} sec'.format(tEl))
 
+#%% Hourly Whisker Plots
+
+import random
+dfHrly = np.zeros((1000,24));
+
+for hr in hours:
+    
+    dfTemp = data.loc[data.HOUR == hr];
+    qT_high = dfTemp.KW.quantile(0.9545); #remove 2 std dev outlier
+    qT_low = dfTemp.KW.quantile(1-0.9545); #remove 2 std dev outlier
+    
+    #dfTemp = dfTemp.KW.values
+    dfTemp = dfTemp.loc[dfTemp.KW < qT_high];
+    dfTemp = dfTemp.loc[dfTemp.KW > qT_low];
+    
+    tempVal = dfTemp.KW.sample(1000);
+
+    dfHrly[:,hr] = tempVal.values;
+    print(hr)
+    
+font = {'family' : 'normal',
+        'size'   : 18}
+
+plt.rc('font', **font)
+    
+plt.figure(figsize=(16,8))
+plt.boxplot(dfHrly, notch=True, showfliers=False, showmeans=True, patch_artist=True,)
+#https://sites.google.com/site/davidsstatistics/home/notched-box-plots
+plt.title('Daily Load Profile')
+plt.xlabel('Hr')
+plt.ylabel('kW')
+
+plt.show()
+
+qT_high = dfSeshEnergy['TIME'].quantile(0.9545); #remove 2 std dev outlier
+qT_low = dfSeshEnergy['TIME'].quantile(1-0.9545); #remove 2 std dev outlier
+seshTime1 = dfSeshEnergy.loc[dfSeshEnergy.TIME < qT_high];
+seshTime1 = seshTime1.loc[dfSeshEnergy.TIME > qT_low];
+
 
 #%% Export data 
 
