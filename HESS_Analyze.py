@@ -18,10 +18,11 @@ import datetime
 #%% Import System Data
 
 # Raw Data
-path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
+path = 'exports\\data_XF1003_PackSize-2018-07-01to2018-10-01.csv'
 # Import Data
 dataRaw = pd.read_csv(path)
 data = dataRaw
+dataHead = data.head(100);
 
 # Prepped Data
 #path = 'exports\\outputFile01.csv'
@@ -34,7 +35,7 @@ colNames = ['TIME', 'HOUR', 'DAY', 'WEEKDAY', 'KWH', 'KWHadded', 'SESSION', 'KVA
 data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
 
 data.TIME = pd.to_datetime(data.TIME)
-offset = datetime.timedelta(hours=6)
+offset = datetime.timedelta(hours=8)
 data.TIME = data.TIME - offset
 
 
@@ -212,16 +213,22 @@ for day in allDays:
 
 #%% Plot dayKWH Histogram 
 
+import math
 import matplotlib.pyplot as plt
 
-maxBin = 5000;
-binEdges = np.arange(0,maxBin,500)
+#plt.rcParams.update(plt.rcParamsDefault)
 
-n, bins, patches = plt.hist(dayKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
+maxkWH = np.max(dayKWH);
+
+maxBin = int(math.ceil(maxkWH / 500.0)) * 500 + 500;
+binEdges = np.arange(0, maxBin, 50)
+
+n, bins, patches = plt.hist(dayKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e', cumulative=False)
                             
 plt.xlabel('Daily Energy (kWh)')
 plt.ylabel('Frequency')
 plt.title('Energy Per Day')
+plt.grid(True)
 
 
 #%% Plot Violin Plot 
