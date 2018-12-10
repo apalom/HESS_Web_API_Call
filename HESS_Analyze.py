@@ -18,7 +18,7 @@ import datetime
 #%% Import System Data
 
 # Raw Data
-path = 'exports\\data_XF1003_PackSize-2018-07-01to2018-10-01.csv'
+path = 'exports\\data_XF1003-2018-06-20to2018-12-10.csv'
 # Import Data
 dataRaw = pd.read_csv(path)
 data = dataRaw
@@ -55,7 +55,7 @@ result = [];
 tST= timeit.default_timer()
 
 for idx, row in data.iterrows():
-    
+    print(idx)
     days[idx][0] = row.TIME.dayofyear;
     days[idx][1] = row.TIME.weekday();
     days[idx][2] = row.TIME.hour; 
@@ -65,7 +65,7 @@ for idx, row in data.iterrows():
     if idx < (len(data)-1):
         energy = data.KWH[idx+1] - data.KWH[idx] 
         energyAdded[idx] = energy;
-
+'''
 count = 1;
 for idx, row in data.iterrows():
     seshCount[idx] = count;    
@@ -75,7 +75,7 @@ for idx, row in data.iterrows():
             result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
             print(idx)
             count = count + 1;
-    
+'''    
 #    if idx < len(data)-1:
 #        if data.KWHadded[idx] < 1.0 and data.KWHadded[idx+1] > 1.0:            
 #            result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
@@ -218,10 +218,10 @@ import matplotlib.pyplot as plt
 
 #plt.rcParams.update(plt.rcParamsDefault)
 
-maxkWH = np.max(dayKWH);
+maxkWH = 2500; # np.max(dayKWH);
 
 maxBin = int(math.ceil(maxkWH / 500.0)) * 500 + 500;
-binEdges = np.arange(0, maxBin, 50)
+binEdges = np.arange(0, maxBin, 250)
 
 n, bins, patches = plt.hist(dayKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e', cumulative=False)
                             
