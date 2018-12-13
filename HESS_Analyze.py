@@ -374,6 +374,31 @@ plt.title('Daily Load Profile')
 plt.xlabel('Hr')
 plt.ylabel('kW')
 
+#%%
+#from matplotlib import style
+#style.use('fivethirtyeight')
+plt.rcParams.update(plt.rcParamsDefault)
+dataTest = data;
+numSessions = int(np.max(data.SESSION));
+
+plt.ion() ## Note this correction
+#fig=plt.figure()
+
+f, ax = plt.subplots(1)
+
+for sesh in range(1, numSessions):
+    
+    dfTemp = dataTest.loc[dataTest.SESSION == sesh];
+    if len(dfTemp) < 40:
+        x = np.arange(0,len(dfTemp));
+        y = dfTemp.KW.values;
+        
+        ax.scatter(x, y, s=4.0, alpha=0.40)
+        #plt.hist2d(y)
+
+
+
+
 
 #%% Export data 
 
