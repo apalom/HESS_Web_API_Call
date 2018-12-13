@@ -18,7 +18,7 @@ import datetime
 #%% Import System Data
 
 # Raw Data
-path = 'exports\\data_XF1003-2018-06-20to2018-12-10.csv'
+path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
 # Import Data
 dataRaw = pd.read_csv(path)
 data = dataRaw
@@ -65,7 +65,7 @@ for idx, row in data.iterrows():
     if idx < (len(data)-1):
         energy = data.KWH[idx+1] - data.KWH[idx] 
         energyAdded[idx] = energy;
-'''
+
 count = 1;
 for idx, row in data.iterrows():
     seshCount[idx] = count;    
@@ -75,7 +75,7 @@ for idx, row in data.iterrows():
             result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
             print(idx)
             count = count + 1;
-'''    
+   
 #    if idx < len(data)-1:
 #        if data.KWHadded[idx] < 1.0 and data.KWHadded[idx+1] > 1.0:            
 #            result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
@@ -359,6 +359,20 @@ qT_high = dfSeshEnergy['TIME'].quantile(0.9545); #remove 2 std dev outlier
 qT_low = dfSeshEnergy['TIME'].quantile(1-0.9545); #remove 2 std dev outlier
 seshTime1 = dfSeshEnergy.loc[dfSeshEnergy.TIME < qT_high];
 seshTime1 = seshTime1.loc[dfSeshEnergy.TIME > qT_low];
+
+
+#%% Plot Load Profile
+start = '2017-12-19 08:00:00'
+end = '2017-12-19 09:00:00'
+dataProfile = data.loc[data.TIME > pd.to_datetime(start)];
+dataProfile = dataProfile.loc[data.TIME < pd.to_datetime(end)];
+
+plt.figure(figsize=(16,8))
+plt.plot(dataProfile.TIME, dataProfile.KW)
+
+plt.title('Daily Load Profile')
+plt.xlabel('Hr')
+plt.ylabel('kW')
 
 
 #%% Export data 
