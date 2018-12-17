@@ -383,21 +383,26 @@ numSessions = int(np.max(data.SESSION));
 
 plt.ion() ## Note this correction
 #fig=plt.figure()
+#f, ax = plt.subplots(1)
 
-f, ax = plt.subplots(1)
+npSesh = np.zeros((0,2))
 
 for sesh in range(1, numSessions):
     
     dfTemp = dataTest.loc[dataTest.SESSION == sesh];
+    dfTemp = dfTemp.loc[dfTemp.KW > 5];
     if len(dfTemp) < 40:
         x = np.arange(0,len(dfTemp));
         y = dfTemp.KW.values;
-        
-        ax.scatter(x, y, s=4.0, alpha=0.40)
+    
+        #ax.scatter(x, y, s=4.0, alpha=0.40)
         #plt.hist2d(y)
+        
+        npTemp = np.column_stack((x,y));
+        npSesh = np.vstack((npSesh, npTemp));
 
 
-
+plt.hist2d(npSesh[0], npSesh[1], bins=(5, 5))
 
 
 #%% Export data 
