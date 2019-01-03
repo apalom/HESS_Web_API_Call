@@ -396,10 +396,6 @@ for sesh in range(1, numSessions):
         ax.scatter(x, y, s=4.0, alpha=0.40)
         #plt.hist2d(y)
 
-
-
-
-
 #%% Export data 
 
 data.to_csv('outputFile.csv')
