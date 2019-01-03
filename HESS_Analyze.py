@@ -58,31 +58,31 @@ for idx, row in data.iterrows():
     print(idx)
     days[idx][0] = row.TIME.dayofyear;
     days[idx][1] = row.TIME.weekday();
-    days[idx][2] = row.TIME.hour; 
+    days[idx][2] = row.TIME.hour;
 
     if row.KW != 0:
         allPF[idx] = np.cos(np.arctan(row.KVAR/row.KW))
     if idx < (len(data)-1):
-        energy = data.KWH[idx+1] - data.KWH[idx] 
+        energy = data.KWH[idx+1] - data.KWH[idx]
         energyAdded[idx] = energy;
 
 count = 1;
 for idx, row in data.iterrows():
-    seshCount[idx] = count;    
-    
+    seshCount[idx] = count;
+
     if idx < len(data)-1:
         if data.ANGLEA[idx] < 200 and data.ANGLEA[idx+1] > 200:
             result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
             print(idx)
             count = count + 1;
-   
+
 #    if idx < len(data)-1:
-#        if data.KWHadded[idx] < 1.0 and data.KWHadded[idx+1] > 1.0:            
+#        if data.KWHadded[idx] < 1.0 and data.KWHadded[idx+1] > 1.0:
 #            result.append(str(idx) + ' ' + str(count) + ' ' + str(data.KWHadded[idx]) + ' ' + str(data.KWHadded[idx+1]))
 #            print(idx)
 #            count = count + 1;
-                      
-            
+
+
 data.DAY = days[:,0];
 #Return the day of the week represented by the date. Monday == 0 … Sunday == 6
 data.WEEKDAY = days[:,1];
@@ -96,7 +96,7 @@ dataHead = data.head(100)
 tEl = timeit.default_timer() - tST
 print('Analysis Time: {0:.4f} sec'.format(tEl))
 
-#%% Calculate Session Energy and Duration 
+#%% Calculate Session Energy and Duration
 
 tST= timeit.default_timer()
 
@@ -105,14 +105,14 @@ seshEnergy = np.zeros((numSessions,3))
 idx = 0;
 
 for sesh in range(1, numSessions):
-    
+
     dfTemp = data.loc[data.SESSION == sesh];
-    
+
     if len(dfTemp) != 1:
         seshKWH = dfTemp.iloc[len(dfTemp)-1].KWH - dfTemp.iloc[0].KWH;
-        
+
         print(sesh, ': ', seshKWH, 'kWh' )
-        
+
         seshEnergy[idx][0] = seshKWH;
         seshEnergy[idx][1] = dfTemp.iloc[0].WEEKDAY;
         seshEnergy[idx][2] = len(dfTemp);
@@ -125,7 +125,7 @@ dfSeshEnergy = dfSeshEnergy.loc[dfSeshEnergy.KWH > 0.5];
 tEl = timeit.default_timer() - tST
 print('Energy Session: {0:.4f} sec'.format(tEl))
 
-#%% Plot seshEnergy Histogram 
+#%% Plot seshEnergy Histogram
 
 import matplotlib.pyplot as plt
 
@@ -147,8 +147,8 @@ plt.ylabel('Frequency')
 plt.title('Energy Per Session')
 
 print('Mean: ', np.mean(seshEnergy1.KWH), ' | Std: ', np.std(seshEnergy1.KWH))
-                            
-#%% Plot seshTime Histogram 
+
+#%% Plot seshTime Histogram
 
 #test = dfSeshEnergy.loc[dfSeshEnergy.TIME < 30];
 
@@ -162,8 +162,8 @@ minVal = int(qT_low + (5 - qT_low) % 5) - 5
 binEdges = np.arange(minVal, maxVal, 1)
 numBins = int(np.sqrt(len(seshTime1)));
 
-n, bins, patches = plt.hist(seshTime1.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727', cumulative=False);                    
-                            
+n, bins, patches = plt.hist(seshTime1.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727', cumulative=False);
+
 plt.xlabel('Minutes')
 #plt.xticks(np.arange(0,maxBin+1,1))
 plt.ylabel('Frequency')
@@ -171,7 +171,7 @@ plt.title('Session Duration')
 
 print('Mean: ', np.mean(seshTime1.TIME), ' | Std: ', np.std(seshTime1.TIME))
 
-#%% Calculate minute Energy 
+#%% Calculate minute Energy
 
 allEnergy = list(set(data.KWH))
 allEnergy.sort()
@@ -181,7 +181,7 @@ for i in range(len(allEnergy)-1):
     minKWH[i] = allEnergy[i+1] - allEnergy[i]
 
 
-#%% Plot minKWH Histogram 
+#%% Plot minKWH Histogram
 
 import matplotlib.pyplot as plt
 
@@ -191,7 +191,7 @@ maxBin = 10;
 binEdges = np.arange(0,maxBin,0.5)
 
 n, bins, patches = plt.hist(minKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
-                            
+
 plt.xlabel('Energy (kWh)')
 plt.xticks(np.arange(0,maxBin+1,1))
 plt.ylabel('Frequency')
@@ -211,7 +211,7 @@ for day in allDays:
     dayKWH[i] = dayEnergy;
     i += 1;
 
-#%% Plot dayKWH Histogram 
+#%% Plot dayKWH Histogram
 
 import math
 import matplotlib.pyplot as plt
@@ -224,14 +224,14 @@ maxBin = int(math.ceil(maxkWH / 500.0)) * 500 + 500;
 binEdges = np.arange(0, maxBin, 250)
 
 n, bins, patches = plt.hist(dayKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e', cumulative=False)
-                            
+
 plt.xlabel('Daily Energy (kWh)')
 plt.ylabel('Frequency')
 plt.title('Energy Per Day')
 plt.grid(True)
 
 
-#%% Plot Violin Plot 
+#%% Plot Violin Plot
 
 import seaborn as sns
 
@@ -258,10 +258,10 @@ eff = 0.5*(1.28+2.08); #kWh/mile operating efficiency
 typicalDay = np.median(dayKWH)
 typicalBus = typicalDay/3;
 
-#17 hours of operation, 30 min each direction, so 17 total round trips 
-milesPerDay = route * 17; 
+#17 hours of operation, 30 min each direction, so 17 total round trips
+milesPerDay = route * 17;
 kWhperRoute = route * eff;
-kWhNeedPerBusDay = milesPerDay * eff; 
+kWhNeedPerBusDay = milesPerDay * eff;
 
 #Assume 3 busses on route
 kWhNeedPerDay = 3 * kWhNeedPerBusDay;
@@ -277,8 +277,8 @@ peakKW = np.sum(data.KW[0:m])
 for i in range(len(data)-m):
     if np.sum(data.KW[i:i+m]) > peakKW:
         peakKW = np.sum(data.KW[i:i+m])
-     
-peakKW = peakKW/m;   
+
+peakKW = peakKW/m;
 
 
 numDays = len(list(set(data.DAY)));
@@ -299,14 +299,14 @@ hrlyLoad = np.zeros((len(hours),1));
 idx = 0;
 
 for hr in hours:
-    
+
     dfTemp = data.loc[data.HOUR == hr];
     # Calculate Mean
     hrlyData[idx][0] = np.average(dfTemp.KW)
         # Calculate Median
     hrlyData[idx][0] = np.average(dfTemp.KW)
-    
-    
+
+
     idx += 1;
 
 hours = np.arange(0,24)
@@ -327,25 +327,25 @@ import random
 dfHrly = np.zeros((1000,24));
 
 for hr in hours:
-    
+
     dfTemp = data.loc[data.HOUR == hr];
     qT_high = dfTemp.KW.quantile(0.9545); #remove 2 std dev outlier
     qT_low = dfTemp.KW.quantile(1-0.9545); #remove 2 std dev outlier
-    
+
     #dfTemp = dfTemp.KW.values
     dfTemp = dfTemp.loc[dfTemp.KW < qT_high];
     dfTemp = dfTemp.loc[dfTemp.KW > qT_low];
-    
+
     tempVal = dfTemp.KW.sample(1000);
 
     dfHrly[:,hr] = tempVal.values;
     print(hr)
-    
+
 font = {'family' : 'normal',
         'size'   : 18}
 
 plt.rc('font', **font)
-    
+
 plt.figure(figsize=(16,8))
 plt.boxplot(dfHrly, notch=True, showfliers=False, showmeans=True, patch_artist=True,)
 #https://sites.google.com/site/davidsstatistics/home/notched-box-plots
@@ -383,19 +383,24 @@ numSessions = int(np.max(data.SESSION));
 
 plt.ion() ## Note this correction
 #fig=plt.figure()
+#f, ax = plt.subplots(1)
 
-f, ax = plt.subplots(1)
+npSesh = np.zeros((0,2))
 
 for sesh in range(1, numSessions):
-    
+
     dfTemp = dataTest.loc[dataTest.SESSION == sesh];
+    dfTemp = dfTemp.loc[dfTemp.KW > 5];
     if len(dfTemp) < 40:
         x = np.arange(0,len(dfTemp));
         y = dfTemp.KW.values;
-        
-        ax.scatter(x, y, s=4.0, alpha=0.40)
+
+        #ax.scatter(x, y, s=4.0, alpha=0.40)
         #plt.hist2d(y)
 
-#%% Export data 
+        npTemp = np.column_stack((x,y));
+        npSesh = np.vstack((npSesh, npTemp));
+
+#%% Export data
 
 data.to_csv('outputFile.csv')
