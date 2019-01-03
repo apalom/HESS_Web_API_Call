@@ -27,4 +27,16 @@ dataHead = data.head(100);
 
 #%%
 
-columns = list(data)
+columns = list(data);
+
+allEVSEids = list(set(data['EVSE ID']))
+dfEVSE = pd.DataFrame();
+
+for evID in allEVSEids:
+    dfTemp = data.loc[data['EVSE ID'] == evID]
+    
+    name = str(evID);
+    dfEVSE[name] = dfTemp;
+    
+    
+    
