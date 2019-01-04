@@ -18,7 +18,9 @@ import datetime
 #%% Import System Data
 
 # Raw Data
-path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
+path = 'exports\\data_XF1003-PackSize-2018-06-20to2018-12-10.csv'
+#path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
+
 # Import Data
 dataRaw = pd.read_csv(path)
 data = dataRaw
