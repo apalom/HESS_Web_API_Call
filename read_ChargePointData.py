@@ -45,6 +45,7 @@ data['End Time'] = pd.to_datetime(data['End Time']);
 data['Total Duration (hh:mm:ss)'] = pd.to_timedelta(data['Total Duration (hh:mm:ss)']);
 data['Charging Time (hh:mm:ss)'] = pd.to_timedelta(data['Charging Time (hh:mm:ss)']);
 
+
 #%% df Energy
 
 dfEnergy = data.loc[data['Energy (kWh)'].notna()]
@@ -63,24 +64,57 @@ plt.xlabel('Energy (kWh)')
 #plt.xticks(np.arange(minVal, maxVal, 5))
 plt.ylabel('Frequency')
 plt.title('Energy Per Session')
+plt.grid()
 
 #%% EVSE Hogging (Sparrow)
 
 allEvents = list(set(data['Plug In Event Id']));
 
 i=0;
-sparrow = np.zeros((len(allEvents),1));
+sparrow = np.zeros((len(allEvents),2));
 
 for eventID in allEvents:
     print(eventID)
-    dfTemp = data.loc[data['Plug In Event Id'] == eventID]    
+    dfTemp = data.loc[data['Plug In Event Id'] == eventID]  
+    connectHr = dfTemp['Plug Connect Time'].iloc[0].hour
+    sparrow[i,0] = connectHr;
+    
     connectTime = dfTemp['Total Duration (hh:mm:ss)'].iloc[0];
     powerTime = dfTemp['Charging Time (hh:mm:ss)'].iloc[0];
-    sparrow[i] = powerTime/connectTime;
+    sparrow[i,1] = powerTime/connectTime;
     i += 1;
 
+dfSparrow = pd.DataFrame(sparrow, columns=['StHr', 'Sparrow']);
+dfSparrow = dfSparrow.sort_values(by=['StHr']);
+dfSparrow = dfSparrow.reset_index(drop=True);
+        
+#font = {'family' : 'normal',
+#        'size'   : 18}
+#plt.rc('font', **font)
+#plt.style.use('default')
 
+#plt.figure(figsize=(12,8))
+#plt.boxplot(sparrow, notch=True, showfliers=True, showmeans=True, patch_artist=True,)
+#https://sites.google.com/site/davidsstatistics/home/notched-box-plots
     
+plt.hist(sparrow[:,1], density=True, rwidth=0.75, color='#607c8e');    
+plt.title('Sparrow Factor')
+plt.xlabel('Hr')
+plt.ylabel('Frequency')
+plt.grid()
+
+plt.show()
+
+#%% Sparrow Margin Plots
+
+import seaborn as sns
+from scipy import stats
+
+g = sns.jointplot(dfSparrow.StHr, dfSparrow.Sparrow, color='blue', alpha='0.05', kind='scatter')
+
+g.ax_joint.set_xticks(np.arange(0,26,2))
+g.annotate(stats.pearsonr, loc=(1.2,1), fontsize=0.1)
+
 #%% Export individual EVSE id dataframes as CSVs
 
 allEVSEids = list(set(data['EVSE ID']))
