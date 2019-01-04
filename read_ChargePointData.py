@@ -37,9 +37,18 @@ dfEnergy = pd.DataFrame(dfEnergy, columns=['EVSE ID', 'Port', 'Station Name', 'P
 
 dfEnergy = dfEnergy.reset_index(drop=True);
 
-#%% Plot Energy
+#%% Plot Energy Histogram
+
+binEdges = np.arange(int(np.min(dfEnergy['Energy (kWh)'])), int(np.max(dfEnergy['Energy (kWh)'])), 1)
+numBins = int(np.sqrt(len(dfEnergy)));
+
+n, bins, patches = plt.hist(dfEnergy['Energy (kWh)'], bins=binEdges, density=True, rwidth=0.75, color='#607c8e');
 
 
+plt.xlabel('Energy (kWh)')
+#plt.xticks(np.arange(minVal, maxVal, 5))
+plt.ylabel('Frequency')
+plt.title('Energy Per Session')
 
 #%% Export individual EVSE id dataframes as CSVs
 
