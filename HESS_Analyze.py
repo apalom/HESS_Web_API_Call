@@ -341,7 +341,7 @@ for hr in hours:
     tempVal = dfTemp.KW.sample(1000);
 
     dfHrly[:,hr] = tempVal.values;
-    print(hr)
+    print(hr);
 
 font = {'family' : 'normal',
         'size'   : 18}
