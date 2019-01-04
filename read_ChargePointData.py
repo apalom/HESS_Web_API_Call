@@ -25,18 +25,23 @@ dataRaw = pd.read_csv(path)
 data = dataRaw
 dataHead = data.head(100);
 
-#%%
 
-columns = list(data);
+#%% Aggregate Data: 
+
+
+
+
+
+#%% Export individual EVSE id dataframes as CSVs
+
+allColumns = list(data);
 
 allEVSEids = list(set(data['EVSE ID']))
-dfEVSE = pd.DataFrame();
 
 for evID in allEVSEids:
     dfTemp = data.loc[data['EVSE ID'] == evID]
     
-    name = str(evID);
-    dfEVSE[name] = dfTemp;
+    dfTemp.to_csv(str(evID) + '.csv')
     
     
     
