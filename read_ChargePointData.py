@@ -144,7 +144,7 @@ from sklearn.cluster import KMeans
 from sklearn import preprocessing
 from sklearn import metrics
 
-clusters = 4
+clusters = 5
 #
 #colNames = ['Start Time','End Time','Total Duration (hh:mm:ss)','Charging Time (hh:mm:ss)', 'Energy (kWh)' ]
 #dfCluster = dfEnergy.filter(colNames, axis = 1)
@@ -156,15 +156,16 @@ dfCluster['End'] = dfEnergy['End Time'].apply(lambda x: x.hour + (x.minute)/60)
 
 dfCluster['Duration'] = dfEnergy['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds//3600 + (x.seconds//60)/60)
 dfCluster['Charging'] = dfEnergy['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds//3600 + (x.seconds//60)/60)
-dfCluster['Energy'] = dfEnergy['Energy (kWh)']
+#dfCluster['Energy'] = dfEnergy['Energy (kWh)']
+#dfCluster['DriverHome'] = dfEnergy['Driver Postal Code']
 
-dfCluster = dfEnergy.filter(['Start', 'End', 'Duration', 'Charging', 'Energy'], axis = 1)
+dfCluster = dfEnergy.filter(['Start', 'End', 'Duration', 'Charging'], axis = 1)
 
 # Normalize Dataframe
 x = dfCluster.values #returns a numpy array
 min_max_scaler = preprocessing.MinMaxScaler()
 x_scaled = min_max_scaler.fit_transform(x)
-dfNorm = pd.DataFrame(x_scaled, columns=['Start', 'End', 'Duration', 'Charging', 'Energy'])
+dfNorm = pd.DataFrame(x_scaled, columns=['Start', 'End', 'Duration', 'Charging'])
 
 # Run k-Means
 kmeans = KMeans(n_clusters=clusters, init='k-means++', n_init=10, max_iter=300).fit(dfNorm)
@@ -192,6 +193,52 @@ print("Adjusted Mutual Information: %0.3f"
 print("Silhouette Coefficient: %0.3f"
       % metrics.silhouette_score(dfCluster, phi_predict, metric='sqeuclidean'))
 
+
+#%% Calculate Arrival Quartiles
+
+dfEnergy['DayofYr'] = dfEnergy['Power Start Time'].apply(lambda x: x.dayofyear) 
+dfEnergy['StartHr'] = dfEnergy['Start'].apply(lambda x: np.round(x) if x < 23.5 else np.floor(x)) 
+
+i=0;
+days = list(set(dfEnergy['DayofYr']));
+
+arrivalCounts = np.zeros((len(days),24));
+arrivalPcts = np.zeros((len(days),24));
+hrs = np.arange(0,24);
+d=0;
+
+
+for day in days:
+    dfTemp = dfEnergy.loc[dfEnergy.DayofYr == day];
+    dayTotal = len(dfTemp);
+    for hr in hrs:
+        dfTempHr = dfTemp.loc[dfTemp.StartHr == hr];
+        arrivals = len(dfTempHr);
+        print(d,hr,arrivals)
+        arrivalCounts[d,hr] = arrivals;    
+        arrivalPcts[d,hr] = arrivals/dayTotal;    
+    d+=1;
+
+arrivalQuarts = np.zeros((24, 5));
+
+for hr in hrs:
+    #arrivalQuarts[hr] = [np.min(arrivalPcts[:,hr]), np.percentile(arrivalPcts[:,hr], 25, axis=0), np.percentile(arrivalPcts[:,hr], 50, axis=0), np.percentile(arrivalPcts[:,hr], 75, axis=0), np.max(arrivalPcts[:,hr])];
+    arrivalQuarts[hr] = [np.min(arrivalCounts[:,hr]), np.percentile(arrivalCounts[:,hr], 25, axis=0), np.percentile(arrivalCounts[:,hr], 50, axis=0), np.percentile(arrivalCounts[:,hr], 75, axis=0), np.max(arrivalCounts[:,hr])];
+
+#%%
+dfArrival = pd.DataFrame(arrivalQuarts, columns=['Min', '25pct', '50pct', '75pct', 'Max'])
+
+colors = plt.cm.Blues(np.linspace(0,1,5))
+
+for i in range(5):
+    plt.plot(dfArrival.values[:,i], color=colors[i])
+
+plt.legend(['Min', '25pct', '50pct', '75pct', 'Max'])
+
+plt.xlabel('Hours')
+plt.xticks(np.arange(0, 24, 2))
+plt.ylabel('EVs')
+plt.title('Arrivals Per Hour Quartiles')
 
 #%% Export individual EVSE id dataframes as CSVs
 
