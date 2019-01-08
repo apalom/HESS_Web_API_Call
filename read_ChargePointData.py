@@ -49,22 +49,41 @@ data['Charging Time (hh:mm:ss)'] = pd.to_timedelta(data['Charging Time (hh:mm:ss
 #%% df Energy
 
 dfEnergy = data.loc[data['Energy (kWh)'].notna()]
-dfEnergy = pd.DataFrame(dfEnergy, columns=['EVSE ID', 'Port', 'Station Name', 'Plug In Event Id', 'Power Start Time', 'Start Time',  'End Time',  'Total Duration (hh:mm:ss)',  'Charging Time (hh:mm:ss)',  'Energy (kWh)',  'Gasoline Savings', 'Port Type',  'Address 1',  'City',  'State/Province',  'Postal Code',  'Country',  'Latitude',  'Longitude',  'Ended By',  'Driver Postal Code'] ) 
-
+dfEnergy = pd.DataFrame(dfEnergy, columns=['EVSE ID', 'Port', 'Station Name', 'Plug In Event Id', 'Power Start Time', 'Start Time',  'End Time',  'Total Duration (hh:mm:ss)', 'Duration (h)', 'Charging Time (hh:mm:ss)', 'Charging (h)', 'Energy (kWh)',  'Gasoline Savings', 'Port Type',  'Address 1',  'City',  'State/Province',  'Postal Code',  'Country',  'Latitude',  'Longitude',  'Ended By',  'Driver Postal Code'] ) 
 dfEnergy = dfEnergy.reset_index(drop=True);
 
-#%% Plot Energy Histogram
+dfEnergy['Duration (h)'] = dfEnergy['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds//3600)
+dfEnergy['Charging (h)'] = dfEnergy['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds//3600)
+
+
+#%% Plot Session Energy Histogram
 
 binEdges = np.arange(int(np.min(dfEnergy['Energy (kWh)'])), int(np.max(dfEnergy['Energy (kWh)'])), 1)
 numBins = int(np.sqrt(len(dfEnergy)));
 
-n, bins, patches = plt.hist(dfEnergy['Energy (kWh)'], bins=binEdges, density=True, rwidth=0.75, color='#607c8e');
+n, bins, patches = plt.hist(dfEnergy['Energy (kWh)'], bins=binEdges, density=True, rwidth=1.0, color='#607c8e', edgecolor='white', linewidth=1.0);
 
 plt.xlabel('Energy (kWh)')
 #plt.xticks(np.arange(minVal, maxVal, 5))
 plt.ylabel('Frequency')
 plt.title('Energy Per Session')
-plt.grid()
+#plt.grid()
+
+
+#%% Plot Session Duration Histogram
+
+binEdges = np.arange(0, 24, 1)
+numBins = int(np.sqrt(len(dfEnergy)));
+
+plt.hist(dfEnergy['Duration (h)'], bins=binEdges, histtype='bar', density=True, rwidth=1.0, color='#607c8e', edgecolor='white', linewidth=1.0);
+plt.hist(dfEnergy['Charging (h)'], bins=binEdges, histtype='bar', density=True, alpha=0.6, rwidth=1, color='lightblue', edgecolor='white', linewidth=1.0);
+
+plt.xlabel('Hours')
+plt.xticks(np.arange(0, 24, 2))
+plt.ylabel('Frequency')
+plt.title('Session Duration')
+plt.legend(['Connected Time', 'Charging Time'])
+#plt.grid()
 
 #%% EVSE Hogging (Sparrow)
 
@@ -84,8 +103,8 @@ for eventID in allEvents:
     sparrow[i,1] = powerTime/connectTime;
     i += 1;
 
-dfSparrow = pd.DataFrame(sparrow, columns=['StHr', 'Sparrow']);
-dfSparrow = dfSparrow.sort_values(by=['StHr']);
+dfSparrow = pd.DataFrame(sparrow, columns=['PluginHour', 'Sparrow']);
+dfSparrow = dfSparrow.sort_values(by=['PluginHour']);
 dfSparrow = dfSparrow.reset_index(drop=True);
         
 #font = {'family' : 'normal',
@@ -97,11 +116,13 @@ dfSparrow = dfSparrow.reset_index(drop=True);
 #plt.boxplot(sparrow, notch=True, showfliers=True, showmeans=True, patch_artist=True,)
 #https://sites.google.com/site/davidsstatistics/home/notched-box-plots
     
-plt.hist(sparrow[:,1], density=True, rwidth=0.75, color='#607c8e');    
-plt.title('Sparrow Factor')
-plt.xlabel('Hr')
+#%% Sparrow Histogram
+plt.style.use('default')
+
+plt.hist(dfSparrow.Sparrow, density=True, rwidth=1.0, color='#607c8e', edgecolor='white', linewidth=1.0);
+plt.title('Charger Utilization Efficiency')
+plt.xlabel('Sparrow Factor')
 plt.ylabel('Frequency')
-plt.grid()
 
 plt.show()
 
@@ -110,7 +131,8 @@ plt.show()
 import seaborn as sns
 from scipy import stats
 
-g = sns.jointplot(dfSparrow.StHr, dfSparrow.Sparrow, color='blue', alpha='0.05', kind='scatter')
+g = sns.jointplot(dfSparrow.PluginHour, dfSparrow.Sparrow, color='lightblue', kind='kde')
+#g = sns.jointplot(dfSparrow.PluginHour, dfSparrow.Sparrow, color='blue', alpha='0.05', kind='kde')
 
 g.ax_joint.set_xticks(np.arange(0,26,2))
 g.annotate(stats.pearsonr, loc=(1.2,1), fontsize=0.1)
