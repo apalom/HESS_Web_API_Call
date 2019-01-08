@@ -213,7 +213,7 @@ for day in allDays:
     dayKWH[i] = dayEnergy;
     i += 1;
 
-#%% Plot dayKWH Histogram
+#%% Plot Total kWh per day Histogram
 
 import math
 import matplotlib.pyplot as plt
@@ -223,14 +223,14 @@ import matplotlib.pyplot as plt
 maxkWH = 2500; # np.max(dayKWH);
 
 maxBin = int(math.ceil(maxkWH / 500.0)) * 500 + 500;
-binEdges = np.arange(0, maxBin, 250)
+binEdges = np.arange(0, maxBin, 100)
 
 n, bins, patches = plt.hist(dayKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e', cumulative=False)
 
 plt.xlabel('Daily Energy (kWh)')
 plt.ylabel('Frequency')
 plt.title('Energy Per Day')
-plt.grid(True)
+plt.grid(False)
 
 
 #%% Plot Violin Plot
