@@ -56,6 +56,7 @@ dfEnergy['Duration (h)'] = dfEnergy['Total Duration (hh:mm:ss)'].apply(lambda x:
 dfEnergy['Charging (h)'] = dfEnergy['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds//3600)
 
 
+
 #%% Plot Session Energy Histogram
 
 binEdges = np.arange(int(np.min(dfEnergy['Energy (kWh)'])), int(np.max(dfEnergy['Energy (kWh)'])), 1)
@@ -137,8 +138,28 @@ g = sns.jointplot(dfSparrow.PluginHour, dfSparrow.Sparrow, color='lightblue', ki
 g.ax_joint.set_xticks(np.arange(0,26,2))
 g.annotate(stats.pearsonr, loc=(1.2,1), fontsize=0.1)
 
-#%%
+#%% Clustering
 
+from sklearn.cluster import KMeans
+from sklearn import preprocessing
+
+clusters = 4
+#
+#colNames = ['Start Time','End Time','Total Duration (hh:mm:ss)','Charging Time (hh:mm:ss)', 'Energy (kWh)' ]
+#dfCluster = dfEnergy.filter(colNames, axis = 1)
+
+dfCluster = dfEnergy;
+
+dfCluster['Start'] = dfEnergy['Start Time'].apply(lambda x: x.hour + (x.minute)/60)
+dfCluster['End'] = dfEnergy['End Time'].apply(lambda x: x.hour + (x.minute)/60)
+
+dfCluster['Duration'] = dfEnergy['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds//3600 + (x.seconds//60)/60)
+dfCluster['Charging'] = dfEnergy['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds//3600 + (x.seconds//60)/60)
+dfCluster['Energy'] = dfEnergy['Energy (kWh)']
+
+dfCluster = dfEnergy.filter(['Start', 'End', 'Duration', 'Charging', 'Energy'], axis = 1)
+
+kmeans = KMeans(n_clusters=clusters, init='k-means++', n_init=10, max_iter=300).fit(dfCluster)
 
 
 #%% Export individual EVSE id dataframes as CSVs
