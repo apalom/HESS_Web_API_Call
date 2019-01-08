@@ -142,6 +142,7 @@ g.annotate(stats.pearsonr, loc=(1.2,1), fontsize=0.1)
 
 from sklearn.cluster import KMeans
 from sklearn import preprocessing
+from sklearn import metrics
 
 clusters = 4
 #
@@ -159,7 +160,37 @@ dfCluster['Energy'] = dfEnergy['Energy (kWh)']
 
 dfCluster = dfEnergy.filter(['Start', 'End', 'Duration', 'Charging', 'Energy'], axis = 1)
 
-kmeans = KMeans(n_clusters=clusters, init='k-means++', n_init=10, max_iter=300).fit(dfCluster)
+# Normalize Dataframe
+x = dfCluster.values #returns a numpy array
+min_max_scaler = preprocessing.MinMaxScaler()
+x_scaled = min_max_scaler.fit_transform(x)
+dfNorm = pd.DataFrame(x_scaled, columns=['Start', 'End', 'Duration', 'Charging', 'Energy'])
+
+# Run k-Means
+kmeans = KMeans(n_clusters=clusters, init='k-means++', n_init=10, max_iter=300).fit(dfNorm)
+
+# Assign k-Mean Clusters
+phi_true = kmeans.labels_
+phi_predict = kmeans.predict(dfNorm)
+
+centers = kmeans.cluster_centers_
+score = kmeans.score(dfNorm)
+
+# Compute Clustering Metrics
+n_clusters_ = len(centers)
+
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('k-Means Score: %d' % score)
+print("Homogeneity: %0.3f" % metrics.homogeneity_score(phi_true, phi_predict))
+print("Completeness: %0.3f" % metrics.completeness_score(phi_true, phi_predict))
+print("V-measure: %0.3f" % metrics.v_measure_score(phi_true, phi_predict))
+print("Adjusted Rand Index: %0.3f"
+      % metrics.adjusted_rand_score(phi_true, phi_predict))
+print("Adjusted Mutual Information: %0.3f"
+      % metrics.adjusted_mutual_info_score(phi_true, phi_predict))
+print("Silhouette Coefficient: %0.3f"
+      % metrics.silhouette_score(dfCluster, phi_predict, metric='sqeuclidean'))
 
 
 #%% Export individual EVSE id dataframes as CSVs
