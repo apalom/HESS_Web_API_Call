@@ -137,6 +137,10 @@ g = sns.jointplot(dfSparrow.PluginHour, dfSparrow.Sparrow, color='lightblue', ki
 g.ax_joint.set_xticks(np.arange(0,26,2))
 g.annotate(stats.pearsonr, loc=(1.2,1), fontsize=0.1)
 
+#%%
+
+
+
 #%% Export individual EVSE id dataframes as CSVs
 
 allEVSEids = list(set(data['EVSE ID']))
