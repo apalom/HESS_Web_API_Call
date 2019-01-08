@@ -197,7 +197,9 @@ print("Silhouette Coefficient: %0.3f"
 #%% Calculate Arrival Quartiles
 
 dfEnergy['DayofYr'] = dfEnergy['Power Start Time'].apply(lambda x: x.dayofyear) 
+dfEnergy['DayofWk'] = dfEnergy['Power Start Time'].apply(lambda x: x.weekday()) 
 dfEnergy['StartHr'] = dfEnergy['Start'].apply(lambda x: np.round(x) if x < 23.5 else np.floor(x)) 
+
 
 i=0;
 days = list(set(dfEnergy['DayofYr']));
@@ -209,15 +211,19 @@ d=0;
 
 
 for day in days:
+    #plot for weekdays only "DayofWk < 5"
+    #plot for weekends only "DayofWk >= 5"
+    
     dfTemp = dfEnergy.loc[dfEnergy.DayofYr == day];
     dayTotal = len(dfTemp);
-    for hr in hrs:
-        dfTempHr = dfTemp.loc[dfTemp.StartHr == hr];
-        arrivals = len(dfTempHr);
-        print(d,hr,arrivals)
-        arrivalCounts[d,hr] = arrivals;    
-        arrivalPcts[d,hr] = arrivals/dayTotal;    
-    d+=1;
+    if dfTemp.DayofWk.iloc[0] >= 5:
+        for hr in hrs:
+            dfTempHr = dfTemp.loc[dfTemp.StartHr == hr];
+            arrivals = len(dfTempHr);
+            print(d,hr,arrivals)
+            arrivalCounts[d,hr] = arrivals;    
+            arrivalPcts[d,hr] = arrivals/dayTotal;    
+        d+=1;
 
 arrivalQuarts = np.zeros((24, 5));
 
