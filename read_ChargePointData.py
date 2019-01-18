@@ -18,7 +18,7 @@ import datetime
 
 # Raw Data
 #filePath = 'PackSize-Session-Details-Meter-with-Summary-20181211.csv';
-filePath = 'Session-Details-Summary-ALL-Lifetime.csv';
+filePath = 'data/Lifetime-Session-Details.csv';
 # Import Data
 dataRaw = pd.read_csv(filePath);
 data = dataRaw;
@@ -37,20 +37,39 @@ colNames = ['EVSE ID', 'Port', 'Station Name', 'Plug In Event Id', 'Plug Connect
 
 data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
 
-data['Plug Connect Time'] = pd.to_datetime(data['Plug Connect Time']);
-data['Plug Disconnect Time'] = pd.to_datetime(data['Plug Disconnect Time']);
-data['Power Start Time'] = pd.to_datetime(data['Power Start Time']);
-data['Power End Time'] = pd.to_datetime(data['Power End Time']);
+#data['Plug Connect Time'] = pd.to_datetime(data['Plug Connect Time']);
+#data['Plug Disconnect Time'] = pd.to_datetime(data['Plug Disconnect Time']);
+#data['Power Start Time'] = pd.to_datetime(data['Power Start Time']);
+#data['Power End Time'] = pd.to_datetime(data['Power End Time']);
 data['Start Time'] = pd.to_datetime(data['Start Time']);
 data['End Time'] = pd.to_datetime(data['End Time']);
 data['Total Duration (hh:mm:ss)'] = pd.to_timedelta(data['Total Duration (hh:mm:ss)']);
 data['Charging Time (hh:mm:ss)'] = pd.to_timedelta(data['Charging Time (hh:mm:ss)']);
 
+#%% Individual Charger for Pramod Team
+
+data['Start Date'] = pd.to_datetime(data['Start Date']);
+data['End Date'] = pd.to_datetime(data['End Date']);
+data['Total Duration (hh:mm:ss)'] = pd.to_timedelta(data['Total Duration (hh:mm:ss)']);
+data['Charging Time (hh:mm:ss)'] = pd.to_timedelta(data['Charging Time (hh:mm:ss)']);
+
+anonCol = ['Start Date', 'Start Time Zone', 'End Date', 'End Time Zone', 'Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)', 
+           'Energy (kWh)', 'GHG Savings (kg)',  'Gasoline Savings (gallons)', 'Port Type', 'Port Number', 'Plug Type', 'EVSE ID',
+           'Fee', 'Ended By', 'Plug In Event Id', 'Start SOC', 'End SOC']  
+
+dfChgr = data.loc[data['EVSE ID'] == 158787]
+
+dfChgr = pd.DataFrame(dfChgr, columns=anonCol)
+dfChgr = dfChgr.sort_values(by=['Start Date']);
+dfChgr = dfChgr.reset_index(drop=True);
+
+
+dfChgr.to_csv('exports/sampleEVSE_158787.csv')
 
 #%% df Energy
 
 dfEnergy = data.loc[data['Energy (kWh)'].notna()]
-dfEnergy = pd.DataFrame(dfEnergy, columns=['EVSE ID', 'Station Name', 'Plug In Event Id', 'Total Duration (hh:mm:ss)', 'Duration (h)', 'Charging Time (hh:mm:ss)', 'Charging (h)', 'Energy (kWh)',  'Port Type',  'Address 1',  'City',  'State/Province',  'Postal Code',  'Latitude',  'Longitude',  'Ended By',  'Driver Postal Code'] ) 
+dfEnergy = pd.DataFrame(dfEnergy, columns=['EVSE ID', 'Station Name', 'Plug In Event Id', 'Total Duration (hh:mm:ss)', 'Duration (h)', 'Charging Time (hh:mm:ss)', 'Charging (h)', 'Energy (kWh)',  'Port Type',  'Address 1',  'City',  'State/Province',  'Postal Code',  'Latitude',  'Longitude',  'Ended By',  'Driver Postal Code']) 
 dfEnergy = dfEnergy.reset_index(drop=True);
 
 dfEnergy['Duration (h)'] = dfEnergy['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
