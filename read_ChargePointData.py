@@ -18,7 +18,9 @@ import datetime
 
 # Raw Data
 #filePath = 'PackSize-Session-Details-Meter-with-Summary-20181211.csv';
-filePath = 'data/Lifetime-Session-Details.csv';
+#filePath = 'data/Lifetime-Session-Details.csv';
+filePath = 'data/Lifetime-UniqueDrivers-vs-Time.csv';
+
 # Import Data
 dataRaw = pd.read_csv(filePath);
 data = dataRaw;
@@ -262,7 +264,7 @@ for hr in hrs:
     #arrivalQuarts[hr] = [np.min(arrivalPcts[:,hr]), np.percentile(arrivalPcts[:,hr], 25, axis=0), np.percentile(arrivalPcts[:,hr], 50, axis=0), np.percentile(arrivalPcts[:,hr], 75, axis=0), np.max(arrivalPcts[:,hr])];
     arrivalQuarts[hr] = [np.min(arrivalCounts[:,hr]), np.percentile(arrivalCounts[:,hr], 25, axis=0), np.percentile(arrivalCounts[:,hr], 50, axis=0), np.percentile(arrivalCounts[:,hr], 75, axis=0), np.max(arrivalCounts[:,hr])];
 
-#%%
+#%% Plot Arrivals
 dfArrival = pd.DataFrame(arrivalQuarts, columns=['Min', '25pct', '50pct', '75pct', 'Max'])
 
 colors = plt.cm.Blues(np.linspace(0,1,5))
@@ -276,6 +278,32 @@ plt.xlabel('Hours')
 plt.xticks(np.arange(0, 24, 2))
 plt.ylabel('EVs')
 plt.title('Arrivals Per Hour Quartiles')
+
+#%% Unique Drivers per Port
+
+data.Date = pd.to_datetime(data.Date)
+
+data = data[(data.Date < '2019-01-17 00:00:00')]
+sub = 30;
+
+df_ratio = []
+
+for d in range(0, len(data) - sub, sub):
+    subset = data.iloc[d:d+sub]
+    avgDrivers = np.average(subset['Unique Drivers'])
+    avgPort = np.average(subset['No. of Ports'])
+    ratio = avgDrivers/avgPort;
+    #print(data.Date.iloc[d], ratio)
+    if ratio > 0 and ratio < np.inf:   
+        df_ratio.append([data.Date.iloc[d], ratio])
+
+df_ratio = pd.DataFrame(df_ratio, columns=['Date', 'Ratio'])
+
+plt.bar(df_ratio.Ratio)
+#plt.plot(data.Date, data['No. of Ports'], 'black')
+#plt.plot(data.Date, data['Unique Drivers'], color='grey', alpha=0.5) 
+#
+#plt.legend()
 
 #%% Export individual EVSE id dataframes as CSVs
 
