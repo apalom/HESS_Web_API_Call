@@ -309,11 +309,16 @@ plt.bar(df_ratio.Ratio)
 
 owners = ['Maverik', 'Salt Lake City Corporation']
 
-dataHighway = data.loc[data['Org Name'].isin(owners)]
-dataMaverik = data.loc[data['Org Name'] == 'Maverik']
+dfHighway = data.loc[data['Org Name'].isin(owners)]
+dfHighway = dfHighway.reset_index(drop=True);
+dfMaverik = data.loc[data['Org Name'] == 'Maverik']
+dfMaverik = dfMaverik.reset_index(drop=True);
 
 
 
+#%% Export data
+
+dfMaverik.to_csv('maverik_Sessions.csv')
 
 
 #%% Export individual EVSE id dataframes as CSVs
