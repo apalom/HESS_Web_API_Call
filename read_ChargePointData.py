@@ -18,8 +18,8 @@ import datetime
 
 # Raw Data
 #filePath = 'PackSize-Session-Details-Meter-with-Summary-20181211.csv';
-#filePath = 'data/Lifetime-Session-Details.csv';
-filePath = 'data/Lifetime-UniqueDrivers-vs-Time.csv';
+filePath = 'data/Lifetime-Session-Details.csv';
+#filePath = 'data/Lifetime-UniqueDrivers-vs-Time.csv';
 
 # Import Data
 dataRaw = pd.read_csv(filePath);
@@ -304,6 +304,17 @@ plt.bar(df_ratio.Ratio)
 #plt.plot(data.Date, data['Unique Drivers'], color='grey', alpha=0.5) 
 #
 #plt.legend()
+
+#%% Data Highways
+
+owners = ['Maverik', 'Salt Lake City Corporation']
+
+dataHighway = data.loc[data['Org Name'].isin(owners)]
+dataMaverik = data.loc[data['Org Name'] == 'Maverik']
+
+
+
+
 
 #%% Export individual EVSE id dataframes as CSVs
 

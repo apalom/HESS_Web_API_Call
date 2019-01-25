@@ -18,8 +18,8 @@ import datetime
 #%% Import System Data
 
 # Raw Data
-path = 'exports\\data_XF1003-PackSize-2018-06-20to2018-12-10.csv'
-#path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
+#path = 'exports\\data_XF1003-PackSize-2018-06-20to2018-12-10.csv'
+path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
 
 # Import Data
 dataRaw = pd.read_csv(path)
@@ -364,8 +364,8 @@ seshTime1 = seshTime1.loc[dfSeshEnergy.TIME > qT_low];
 
 
 #%% Plot Load Profile
-start = '2017-12-19 08:00:00'
-end = '2017-12-19 09:00:00'
+start = '2018-01-10 00:00:00'
+end = '2018-01-11 00:00:00'
 dataProfile = data.loc[data.TIME > pd.to_datetime(start)];
 dataProfile = dataProfile.loc[data.TIME < pd.to_datetime(end)];
 
