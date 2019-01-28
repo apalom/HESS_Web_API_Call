@@ -382,14 +382,17 @@ for station in dfMaverikEVSEs['Station Name']:
     totEnergy = np.sum(temp['Energy (kWh)'])
     energyPerDay = totEnergy / days;
     
-    dfMaverikEVSEs.iloc[i]['Start Date'] = dateSt
-    dfMaverikEVSEs.iloc[i]['End Date'] = dateEn
-    dfMaverikEVSEs.iloc[i]['Days'] = days
-    dfMaverikEVSEs.iloc[i]['Total Energy'] = totEnergy
-    dfMaverikEVSEs.iloc[i]['Avg Energy'] = energyPerDay
+    dfMaverikEVSEs.at[i, 'Start Date'] = dateSt
+    dfMaverikEVSEs.at[i, 'End Date'] = dateEn
+    dfMaverikEVSEs.at[i, 'Days'] = days
+    dfMaverikEVSEs.at[i, 'Total Energy'] = totEnergy
+    dfMaverikEVSEs.at[i, 'Avg Energy'] = energyPerDay
     
     i += 1;
-    
+
+#df.at['C', 'x'] = 10    
+#df.set_value('C', 'x', 10)
+
 
 #%% Histogram
 
