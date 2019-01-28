@@ -38,7 +38,7 @@ colNames = ['EVSE ID', 'Port', 'Station Name', 'Plug In Event Id', 'Plug Connect
             'Driver Postal Code'] 
 
 data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
-
+#%%
 #data['Plug Connect Time'] = pd.to_datetime(data['Plug Connect Time']);
 #data['Plug Disconnect Time'] = pd.to_datetime(data['Plug Disconnect Time']);
 #data['Power Start Time'] = pd.to_datetime(data['Power Start Time']);
@@ -307,13 +307,104 @@ plt.bar(df_ratio.Ratio)
 
 #%% Data Highways
 
+data['Start Date'] = pd.to_datetime(data['Start Date']);
+data['End Date'] = pd.to_datetime(data['End Date']);
+data = data.sort_values(by='Start Date');
+
 owners = ['Maverik', 'Salt Lake City Corporation']
 
 dfHighway = data.loc[data['Org Name'].isin(owners)]
+dfHighway = dfHighway[dfHighway['Energy (kWh)'] > 0]
 dfHighway = dfHighway.reset_index(drop=True);
-dfMaverik = data.loc[data['Org Name'] == 'Maverik']
+
+dfHighwayDCFC = dfHighway[dfHighway['Port Type'] == 'DC Fast']
+dfHighwayDCFC = dfHighwayDCFC.reset_index(drop=True);
+
+dfHighwayL2 = dfHighway[dfHighway['Port Type'] == 'Level 2']
+dfHighwayL2 = dfHighwayL2.reset_index(drop=True);
+
+dfMaverik = data[data['Org Name'] == 'Maverik']
+dfMaverik = dfMaverik[dfMaverik['Energy (kWh)'] > 0]
 dfMaverik = dfMaverik.reset_index(drop=True);
 
+dfMaverikDCFC = dfMaverik[dfMaverik['Port Type'] == 'DC Fast']
+dfMaverikDCFC = dfMaverikDCFC.reset_index(drop=True);
+
+dfMaverikL2 = dfMaverik[dfMaverik['Port Type'] == 'Level 2']
+dfMaverikL2 = dfMaverikL2.reset_index(drop=True);
+
+#%% Prep dfMaverik EVSEs
+
+dfMaverikEVSEs = pd.DataFrame(dfMaverik, columns=['Station Name', 'Energy (kWh)',  'Port Type', 'Latitude',  'Longitude']) 
+dfMaverikEVSEs.drop_duplicates(subset ='Station Name', keep = 'first', inplace = True)
+dfMaverikEVSEs = dfMaverikEVSEs.sort_values(by='Latitude')
+dfMaverikEVSEs = dfMaverikEVSEs.reset_index(drop=True);
+
+#%% Distance from Nearest
+
+import numpy as np
+from scipy.spatial.distance import cdist
+import geopy.distance
+
+distances = np.zeros((len(dfMaverikEVSEs),len(dfMaverikEVSEs)));
+
+for j in range(len(dfMaverikEVSEs)):
+    
+    latlon1 =  (dfMaverikEVSEs.iloc[j].Latitude, dfMaverikEVSEs.iloc[j].Longitude)
+    
+    for k in range(len(dfMaverikEVSEs)):
+    
+        latlon2 =  (dfMaverikEVSEs.iloc[k].Latitude, dfMaverikEVSEs.iloc[k].Longitude)
+        
+        distances[j][k] = geopy.distance.distance(latlon1, latlon2).km
+        
+#allCoord = list(zip(dfMaverikEVSEs.Latitude, dfMaverikEVSEs.Longitude))
+#list(itertools.permutations([1,2,3]))
+#print(geopy.distance.distance(coords_1, coords_2).km)
+
+#%% Highway EVSE Energy
+       
+i= 0;        
+
+dfMaverikEVSEs['Start Date'] = 0
+dfMaverikEVSEs['End Date'] = 0
+dfMaverikEVSEs['Days'] = 0
+dfMaverikEVSEs['Total Energy'] = 0
+dfMaverikEVSEs['Avg Energy'] = 0
+        
+for station in dfMaverikEVSEs['Station Name']:
+    
+    temp = dfMaverik[dfMaverik['Station Name'] == station];
+    
+    dateSt = temp.iloc[0]['Start Date']
+    dateEn = temp.iloc[len(temp)-1]['Start Date']
+    days = (dateEn - dateSt).days
+    totEnergy = np.sum(temp['Energy (kWh)'])
+    energyPerDay = totEnergy / days;
+    
+    dfMaverikEVSEs.iloc[i]['Start Date'] = dateSt
+    dfMaverikEVSEs.iloc[i]['End Date'] = dateEn
+    dfMaverikEVSEs.iloc[i]['Days'] = days
+    dfMaverikEVSEs.iloc[i]['Total Energy'] = totEnergy
+    dfMaverikEVSEs.iloc[i]['Avg Energy'] = energyPerDay
+    
+    i += 1;
+    
+
+#%% Histogram
+
+binEdges = np.arange(0, 60, 10/3)
+#numBins = int(np.sqrt(len(df_time)));
+
+n1, bins1, patches1 = plt.hist(dfHighwayDCFC['Energy (kWh)'], bins=binEdges, histtype='bar', density=True, rwidth=1.0, color='#607c8e', edgecolor='white', linewidth=1.0);
+n2, bins2, patches2 = plt.hist(dfHighwayL2['Energy (kWh)'], bins=binEdges, histtype='bar', density=True, alpha=0.6, rwidth=1, color='lightblue', edgecolor='white', linewidth=1.0);
+
+plt.xlabel('Energy kWh')
+#plt.xticks(np.arange(0, 1200, 120))
+#plt.xlim([0,480])
+plt.ylabel('Frequency')
+plt.title('All Public EVSE Session Energy')
+plt.legend(['DCFC', 'Level 2'])
 
 
 #%% Export data
