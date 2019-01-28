@@ -362,15 +362,16 @@ for j in range(len(dfMaverikEVSEs)):
 #list(itertools.permutations([1,2,3]))
 #print(geopy.distance.distance(coords_1, coords_2).km)
 
-#%% Highway EVSE Energy
+#%% Maverik EVSE Energy
        
 i= 0;        
 
 dfMaverikEVSEs['Start Date'] = 0
 dfMaverikEVSEs['End Date'] = 0
 dfMaverikEVSEs['Days'] = 0
-dfMaverikEVSEs['Total Energy'] = 0
-dfMaverikEVSEs['Avg Energy'] = 0
+dfMaverikEVSEs['Total Energy'] = 0.0
+dfMaverikEVSEs['Avg Energy'] = 0.0
+dfMaverikEVSEs['Min Distance'] = 0.0
         
 for station in dfMaverikEVSEs['Station Name']:
     
@@ -388,10 +389,86 @@ for station in dfMaverikEVSEs['Station Name']:
     dfMaverikEVSEs.at[i, 'Total Energy'] = totEnergy
     dfMaverikEVSEs.at[i, 'Avg Energy'] = energyPerDay
     
+    dist1 = distances[:][i][distances[:][i] > 1]
+    dfMaverikEVSEs.at[i, 'Min Distance'] = np.min(dist1)
+    #dfMaverikEVSEs.at[i, 'Min Distance'] = np.min(distances[:][i][np.nonzero(distances[:][i])])
+    
     i += 1;
 
-#df.at['C', 'x'] = 10    
-#df.set_value('C', 'x', 10)
+averikL2 = dfMaverikL2.reset_index(drop=True);
+
+#%% Prep dfMaverik EVSEs
+
+dfPublicEVSEs = pd.DataFrame(dfHighway, columns=['Station Name', 'Energy (kWh)',  'Port Type', 'Latitude',  'Longitude']) 
+dfPublicEVSEs.drop_duplicates(subset ='Station Name', keep = 'first', inplace = True)
+dfPublicEVSEs = dfPublicEVSEs.sort_values(by='Latitude')
+dfPublicEVSEs = dfPublicEVSEs.reset_index(drop=True);
+
+#%% Distance from Nearest
+
+import numpy as np
+from scipy.spatial.distance import cdist
+import geopy.distance
+
+distances = np.zeros((len(dfPublicEVSEs),len(dfPublicEVSEs)));
+
+for j in range(len(dfPublicEVSEs)):
+    
+    latlon1 =  (dfPublicEVSEs.iloc[j].Latitude, dfPublicEVSEs.iloc[j].Longitude)
+    
+    for k in range(len(dfPublicEVSEs)):
+    
+        latlon2 =  (dfPublicEVSEs.iloc[k].Latitude, dfPublicEVSEs.iloc[k].Longitude)
+        
+        distances[j][k] = geopy.distance.distance(latlon1, latlon2).km
+        
+#allCoord = list(zip(dfMaverikEVSEs.Latitude, dfMaverikEVSEs.Longitude))
+#list(itertools.permutations([1,2,3]))
+#print(geopy.distance.distance(coords_1, coords_2).km)
+
+#%% Public EVSE Energy
+       
+i= 0;        
+
+dfPublicEVSEs['Start Date'] = 0
+dfPublicEVSEs['End Date'] = 0
+dfPublicEVSEs['Days'] = 0
+dfPublicEVSEs['Total Energy'] = 0.0
+dfPublicEVSEs['Avg Energy'] = 0.0
+dfPublicEVSEs['Min Distance'] = 0.0
+        
+for station in dfPublicEVSEs['Station Name']:
+    
+    temp = dfHighway[dfHighway['Station Name'] == station];
+    
+    dateSt = temp.iloc[0]['Start Date']
+    dateEn = temp.iloc[len(temp)-1]['Start Date']
+    days = (dateEn - dateSt).days
+    totEnergy = np.sum(temp['Energy (kWh)'])
+    energyPerDay = totEnergy / days;
+    
+    dfPublicEVSEs.at[i, 'Start Date'] = dateSt
+    dfPublicEVSEs.at[i, 'End Date'] = dateEn
+    dfPublicEVSEs.at[i, 'Days'] = days
+    dfPublicEVSEs.at[i, 'Total Energy'] = totEnergy
+    dfPublicEVSEs.at[i, 'Avg Energy'] = energyPerDay
+    
+    dist1 = distances[:][i][distances[:][i] > 1]
+    dfPublicEVSEs.at[i, 'Min Distance'] = np.min(dist1)
+    #dfMaverikEVSEs.at[i, 'Min Distance'] = np.min(distances[:][i][np.nonzero(distances[:][i])])
+    
+    i += 1;
+
+
+#%% Plot Energy vs. Distance
+
+plt.scatter(x=dfPublicEVSEs['Min Distance'], y=dfPublicEVSEs['Days'], c=dfPublicEVSEs['Avg Energy'], cmap='Greys')
+
+cbar = plt.colorbar()
+cbar.set_label('Average Daily Energy (kWh)')
+plt.xlabel('Distance from Nearest EVSE')
+plt.ylabel('Days Since Installation')
+plt.title('Public EVSE Utilization')
 
 
 #%% Histogram
