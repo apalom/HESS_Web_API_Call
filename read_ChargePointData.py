@@ -425,6 +425,8 @@ for j in range(len(dfPublicEVSEs)):
 #allCoord = list(zip(dfMaverikEVSEs.Latitude, dfMaverikEVSEs.Longitude))
 #list(itertools.permutations([1,2,3]))
 #print(geopy.distance.distance(coords_1, coords_2).km)
+        
+#%% 
 
 #%% Public EVSE Energy
        
@@ -434,12 +436,16 @@ dfPublicEVSEs['Start Date'] = 0
 dfPublicEVSEs['End Date'] = 0
 dfPublicEVSEs['Days'] = 0
 dfPublicEVSEs['Total Energy'] = 0.0
-dfPublicEVSEs['Avg Energy'] = 0.0
+dfPublicEVSEs['Avg kWh Per Day'] = 0.0
+dfPublicEVSEs['Avg kWh Per Sesh'] = 0.0
 dfPublicEVSEs['Min Distance'] = 0.0
         
 for station in dfPublicEVSEs['Station Name']:
     
     temp = dfHighway[dfHighway['Station Name'] == station];
+    
+    energyPerSesh = np.average(temp['Energy (kWh)'])
+    dfPublicEVSEs.at[i, 'Avg kWh Per Sesh'] = energyPerSesh
     
     dateSt = temp.iloc[0]['Start Date']
     dateEn = temp.iloc[len(temp)-1]['Start Date']
@@ -450,8 +456,8 @@ for station in dfPublicEVSEs['Station Name']:
     dfPublicEVSEs.at[i, 'Start Date'] = dateSt
     dfPublicEVSEs.at[i, 'End Date'] = dateEn
     dfPublicEVSEs.at[i, 'Days'] = days
-    dfPublicEVSEs.at[i, 'Total Energy'] = totEnergy
-    dfPublicEVSEs.at[i, 'Avg Energy'] = energyPerDay
+    dfPublicEVSEs.at[i, 'Total Energy'] = totEnergy    
+    dfPublicEVSEs.at[i, 'Avg kWh Per Day'] = energyPerDay
     
     dist1 = distances[:][i][distances[:][i] > 1]
     dfPublicEVSEs.at[i, 'Min Distance'] = np.min(dist1)
@@ -469,10 +475,6 @@ cbar.set_label('Average Daily Energy (kWh)')
 plt.xlabel('Distance from Nearest EVSE')
 plt.ylabel('Days Since Installation')
 plt.title('Public EVSE Utilization')
-
-#%% Map Plot
-
-
 
 #%% Histogram
 
