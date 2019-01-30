@@ -472,31 +472,37 @@ for station in dfPublicEVSEs['Station Name']:
     
     adoptDays = []
     adoptUse = []
+    adoptEnergy = []
     
     if len(temp) > 2:
     
-        tempAdopt = np.zeros((len(temp)-2,2))
+        tempAdopt = np.zeros((len(temp)-2,3))
         
         for r in range(2,len(temp)):
         
             temp1 = temp[0:r]
             
-            sessions = len(temp[0:r])                  
+            sessions = len(temp[0:r])          
+            energy = np.sum(temp1['Energy (kWh)'])
+            
             dateSt = temp1.iloc[0]['Start Date']
             dateEn = temp1.iloc[len(temp1)-1]['Start Date']
             days1 = (dateEn - dateSt).days     
+            
             if days1 == 0:
                 days1 = 1;
             
             adoptDays.append(days1)
             adoptUse.append(sessions/days1)
+            adoptEnergy.append(energy)
         
             #adoption.update({ station : {str(adoption[:,s]) + ', ' + str(adoption[:,s+1]) }})
         
-            print(days1, sessions/days1)
+            print(days1, sessions/days1, energy)
         
         tempAdopt[:,0] = adoptDays
         tempAdopt[:,1] = adoptUse
+        tempAdopt[:,2] = adoptEnergy
         
         adoption[station] = tempAdopt;
         #adoption[station] = list(zip(adoptDays,adoptUse))
