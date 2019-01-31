@@ -315,6 +315,14 @@ owners = ['Maverik', 'Salt Lake City Corporation']
 
 dfHighway = data.loc[data['Org Name'].isin(owners)]
 dfHighway = dfHighway[dfHighway['Energy (kWh)'] > 0]
+dfHighway = dfHighway.sort_values(by='Start Date')
+
+dfHighway['StDate'] = dfHighway['Start Date'].apply(lambda x: datetime.date(x.year, x.month, x.day))
+
+for j in range(len(dfHighway)):
+    cDate = dfHighway.iloc[j]['Start Date'];
+    dfHighway.at[j, 'StDate'] = datetime.date(cDate.year, cDate.month, cDate.day)
+
 dfHighway = dfHighway.reset_index(drop=True);
 
 dfHighwayDCFC = dfHighway[dfHighway['Port Type'] == 'DC Fast']
@@ -426,19 +434,11 @@ for j in range(len(dfPublicEVSEs)):
 #allCoord = list(zip(dfMaverikEVSEs.Latitude, dfMaverikEVSEs.Longitude))
 #list(itertools.permutations([1,2,3]))
 #print(geopy.distance.distance(coords_1, coords_2).km)
-        
-#%% Adoption Lag
-
-
-
-
 
 #%% Public EVSE Energy
        
 i= 0;      
 s = 0;  
-
-adoption = {}
 
 dfPublicEVSEs['Start Date'] = 0
 dfPublicEVSEs['End Date'] = 0
@@ -449,25 +449,22 @@ dfPublicEVSEs['Avg kWh Per Sesh'] = 0.0
 dfPublicEVSEs['Min Distance'] = 0.0
 dfPublicEVSEs['StDate'] = 0.0
 
-for j in range(len(dfPublicEVSEs)):
-    cDate = dfPublicEVSEs.iloc[j]['Start Date'];
-    dfPublicEVSEs.at[j, 'StDate'] = datetime.date(cDate.year, cDate.month, cDate.day)
-     
-#%%
-i = 0;
 adoption = {}
+date0 = {}
         
 for station in dfPublicEVSEs['Station Name']:
     
     temp = dfHighway[dfHighway['Station Name'] == station];
         
-    dfHighway = dfHighway.sort_values(by='Start Date')
-    dfHighway = dfHighway.reset_index(drop=True);
+    temp = temp.sort_values(by='Start Date')
+    temp = temp.reset_index(drop=True);
     
     energyPerSesh = np.average(temp['Energy (kWh)'])
     dfPublicEVSEs.at[i, 'Avg kWh Per Sesh'] = energyPerSesh
     
     dateSt = temp.iloc[0]['Start Date']
+    date0[station] = datetime.date(dateSt.year, dateSt.month, dateSt.day)
+    
     dateEn = temp.iloc[len(temp)-1]['Start Date']
     days = (dateEn - dateSt).days
     totEnergy = np.sum(temp['Energy (kWh)'])
@@ -482,23 +479,53 @@ for station in dfPublicEVSEs['Station Name']:
     dist1 = distances[:][i][distances[:][i] > 1]
     dfPublicEVSEs.at[i, 'Min Distance'] = np.min(dist1)
     #dfMaverikEVSEs.at[i, 'Min Distance'] = np.min(distances[:][i][np.nonzero(distances[:][i])])
+
+    i += 1;
+
+for j in range(len(dfPublicEVSEs)):
+    cDate = dfPublicEVSEs.iloc[j]['Start Date'];
+    dfPublicEVSEs.at[j, 'StDate'] = datetime.date(cDate.year, cDate.month, cDate.day)
+   
+
+#%%
+
+from datetime import timedelta
+
+for station in dfPublicEVSEs['Station Name']:
     
+    temp = dfHighway[dfHighway['Station Name'] == station];    
+    temp = temp.sort_values(by=['StDate']);
+        
     evseDays = []
     evseUse = []
     evseEnergy = []
     
     if len(temp) > 100:
             
-        daysIn = list(set(dfPublicEVSEs.StDate));
-        
-        for d in daysIn:
-            
-            temp1 = dfPublicEVSEs[dfPublicEVSEs.StDate == d]
+        daysIn = sorted(list(set(temp.StDate)));
 
-            dateEn = d;
-            daySince = (dateEn - dateSt).days            
-                        
-            dayEnergy = np.sum(temp1['Energy (kWh)'])
+        for d in range(0, len(temp), 7):
+        
+            dateEn = temp.iloc[0]['StDate'] + timedelta(days=d)
+            dateSt = dateEn - timedelta(days=7)
+            daySince = d;
+            
+            temp1 = temp[(temp.StDate > dateSt) & (temp.StDate < dateEn)] 
+            #temp1 = temp[(temp.StDate < dateEn)]
+        
+#        for d in daysIn:
+#                        
+#            temp1 = temp[temp.StDate == d]
+#
+#            dateEn = d;
+#            daySince = (dateEn - temp.iloc[0]['StDate']).days            
+#            
+#            print(d, dateEn, date0[station], temp.iloc[0]['StDate'], daySince)
+            
+#            if daySince < 0: 
+#                break
+      
+            dayEnergy = np.sum(temp1['Energy (kWh)'])/7
             sessions = len(temp1)
             
             kWhPerSesh = dayEnergy/sessions
@@ -512,11 +539,14 @@ for station in dfPublicEVSEs['Station Name']:
         tempAdopt = np.zeros((len(evseDays),3)) 
     
         tempAdopt[:,0] = evseDays
-        tempAdopt[:,1] = evseUse
-        tempAdopt[:,2] = evseEnergy
+        tempAdopt[:,1] = evseEnergy
+        tempAdopt[:,2] = evseUse
             
         adoption[station] = tempAdopt;
-        
+    
+#    if daySince < 0: 
+#        break
+#            
     i += 1;
         
 #%%
