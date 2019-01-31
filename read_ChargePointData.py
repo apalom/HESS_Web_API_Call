@@ -453,11 +453,16 @@ for j in range(len(dfPublicEVSEs)):
     cDate = dfPublicEVSEs.iloc[j]['Start Date'];
     dfPublicEVSEs.at[j, 'StDate'] = datetime.date(cDate.year, cDate.month, cDate.day)
      
-    
+#%%
+i = 0;
+adoption = {}
         
 for station in dfPublicEVSEs['Station Name']:
     
     temp = dfHighway[dfHighway['Station Name'] == station];
+        
+    dfHighway = dfHighway.sort_values(by='Start Date')
+    dfHighway = dfHighway.reset_index(drop=True);
     
     energyPerSesh = np.average(temp['Energy (kWh)'])
     dfPublicEVSEs.at[i, 'Avg kWh Per Sesh'] = energyPerSesh
@@ -478,16 +483,44 @@ for station in dfPublicEVSEs['Station Name']:
     dfPublicEVSEs.at[i, 'Min Distance'] = np.min(dist1)
     #dfMaverikEVSEs.at[i, 'Min Distance'] = np.min(distances[:][i][np.nonzero(distances[:][i])])
     
-    adoptDays = []
-    adoptUse = []
-    adoptEnergy = []
+    evseDays = []
+    evseUse = []
+    evseEnergy = []
     
     if len(temp) > 100:
-    
-        #date = temp.iloc[0]['Start Date']
-        #str(date.year) + '-' + str(date.month) + '-' + str(date.day)
-        #temp['Start Date'] == '2018-6-16'
+            
+        daysIn = list(set(dfPublicEVSEs.StDate));
         
+        for d in daysIn:
+            
+            temp1 = dfPublicEVSEs[dfPublicEVSEs.StDate == d]
+
+            dateEn = d;
+            daySince = (dateEn - dateSt).days            
+                        
+            dayEnergy = np.sum(temp1['Energy (kWh)'])
+            sessions = len(temp1)
+            
+            kWhPerSesh = dayEnergy/sessions
+            
+            evseDays.append(daySince)
+            evseUse.append(sessions)
+            evseEnergy.append(dayEnergy)
+            
+            print(daySince, sessions, dayEnergy)
+    
+        tempAdopt = np.zeros((len(evseDays),3)) 
+    
+        tempAdopt[:,0] = evseDays
+        tempAdopt[:,1] = evseUse
+        tempAdopt[:,2] = evseEnergy
+            
+        adoption[station] = tempAdopt;
+        
+    i += 1;
+        
+#%%
+
         for r in range(len(temp)):
         
             dateSt = temp1.iloc[r]['Start Date']
@@ -502,7 +535,6 @@ for station in dfPublicEVSEs['Station Name']:
             s += 1;    
     i += 1;
     
-    datetime.date(dateSt.year, dateSt.month, dateSt.day)
         
 #%%
         tempAdopt = np.zeros((len(temp)-2,3))
