@@ -323,6 +323,8 @@ for j in range(len(dfHighway)):
     cDate = dfHighway.iloc[j]['Start Date'];
     dfHighway.at[j, 'StDate'] = datetime.date(cDate.year, cDate.month, cDate.day)
 
+dfHighway = dfHighway.dropna(subset=['Latitude', 'Longitude'])
+
 dfHighway = dfHighway.reset_index(drop=True);
 
 dfHighwayDCFC = dfHighway[dfHighway['Port Type'] == 'DC Fast']
@@ -482,9 +484,9 @@ for station in dfPublicEVSEs['Station Name']:
 
     i += 1;
 
-for j in range(len(dfPublicEVSEs)):
-    cDate = dfPublicEVSEs.iloc[j]['Start Date'];
-    dfPublicEVSEs.at[j, 'StDate'] = datetime.date(cDate.year, cDate.month, cDate.day)
+#for j in range(len(dfPublicEVSEs)):
+#    cDate = dfPublicEVSEs.iloc[j]['Start Date'];
+#    dfPublicEVSEs.at[j, 'StDate'] = datetime.date(cDate.year, cDate.month, cDate.day)
    
 
 #%%
