@@ -338,7 +338,7 @@ dfMaverik = dfMaverik[dfMaverik['Energy (kWh)'] > 0]
 dfMaverik = dfMaverik.reset_index(drop=True);
 
 dfMaverikDCFC = dfMaverik[dfMaverik['Port Type'] == 'DC Fast']
-dfMaverikDCFC = dfMaverikDCFC.reset_index(drop=True);
+dfMaverikDCFC = dfMaverikDCFC.reset_index(drop=True);   
 
 dfMaverikL2 = dfMaverik[dfMaverik['Port Type'] == 'Level 2']
 dfMaverikL2 = dfMaverikL2.reset_index(drop=True);
@@ -409,7 +409,7 @@ averikL2 = dfMaverikL2.reset_index(drop=True);
 
 #%% Prep Public EVSEs
 
-dfPublicEVSEs = pd.DataFrame(dfHighway, columns=['Station Name', 'Energy (kWh)',  'Port Type', 'Latitude',  'Longitude']) 
+dfPublicEVSEs = pd.DataFrame(dfHighway, columns=['Station Name', 'Start Date', 'Energy (kWh)',  'Port Type', 'Latitude',  'Longitude']) 
 dfPublicEVSEs.drop_duplicates(subset ='Station Name', keep = 'first', inplace = True)
 dfPublicEVSEs = dfPublicEVSEs.sort_values(by='Latitude')
 dfPublicEVSEs = dfPublicEVSEs.reset_index(drop=True);
