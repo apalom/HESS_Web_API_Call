@@ -403,6 +403,7 @@ dfPublicEVSEs = pd.DataFrame(dfHighway, columns=['Station Name', 'Energy (kWh)',
 dfPublicEVSEs.drop_duplicates(subset ='Station Name', keep = 'first', inplace = True)
 dfPublicEVSEs = dfPublicEVSEs.sort_values(by='Latitude')
 dfPublicEVSEs = dfPublicEVSEs.reset_index(drop=True);
+ 
 
 #%% Distance from Nearest
 
@@ -446,6 +447,13 @@ dfPublicEVSEs['Total Energy'] = 0.0
 dfPublicEVSEs['Avg kWh Per Day'] = 0.0
 dfPublicEVSEs['Avg kWh Per Sesh'] = 0.0
 dfPublicEVSEs['Min Distance'] = 0.0
+dfPublicEVSEs['StDate'] = 0.0
+
+for j in range(len(dfPublicEVSEs)):
+    cDate = dfPublicEVSEs.iloc[j]['Start Date'];
+    dfPublicEVSEs.at[j, 'StDate'] = datetime.date(cDate.year, cDate.month, cDate.day)
+     
+    
         
 for station in dfPublicEVSEs['Station Name']:
     
@@ -476,6 +484,27 @@ for station in dfPublicEVSEs['Station Name']:
     
     if len(temp) > 100:
     
+        #date = temp.iloc[0]['Start Date']
+        #str(date.year) + '-' + str(date.month) + '-' + str(date.day)
+        #temp['Start Date'] == '2018-6-16'
+        
+        for r in range(len(temp)):
+        
+            dateSt = temp1.iloc[r]['Start Date']
+            dateEn = temp1.iloc[len(temp1)-1]['Start Date']
+            days1 = (dateEn - dateSt).days     
+            
+            if days1 == 0:
+                s += 1
+                
+            if days1 > 0:
+            
+            s += 1;    
+    i += 1;
+    
+    datetime.date(dateSt.year, dateSt.month, dateSt.day)
+        
+#%%
         tempAdopt = np.zeros((len(temp)-2,3))
         
         for r in range(2,len(temp)):
@@ -512,7 +541,11 @@ for station in dfPublicEVSEs['Station Name']:
 
 #%%
     
-    
+def factorial(n):
+    if n == 1:
+        return 1
+    else:
+        return n * factorial(n-1)    
                
 #%% Plot Energy vs. Distance
 
