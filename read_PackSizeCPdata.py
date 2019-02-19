@@ -50,4 +50,42 @@ dfPacksize = data[data['Station Name'].str.contains("PACKSIZE")]
 dfPacksize = dfPacksize.sort_values(by=['Start Date']);
 dfPacksize = dfPacksize.reset_index(drop=True);
 
-#%%
+#%% df Energy
+
+col1 =  ['EVSE ID', 'Port Number', 'Station Name', 'Plug In Event Id', 'Start Date', 'End Date', 
+            'Total Duration (hh:mm:ss)', 'Duration (h)', 'Charging Time (hh:mm:ss)', 'Charging (h)', 
+            'Energy (kWh)', 'Ended By', 'Port Type', 'Latitude', 'Longitude', 'User ID', 'Driver Postal Code'];
+
+dfEnergy = dfPacksize.loc[data['Energy (kWh)'].notna()]
+dfEnergy = pd.DataFrame(dfEnergy, columns=col1)
+
+dfEnergy = dfEnergy.reset_index(drop=True);
+
+dfEnergy['Duration (h)'] = dfEnergy['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
+dfEnergy['Charging (h)'] = dfEnergy['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
+
+#%% Plot Session Energy Histogram
+
+binEdges = np.arange(int(np.min(dfEnergy['Energy (kWh)'])), int(np.max(dfEnergy['Energy (kWh)'])), 5)
+numBins = int(np.sqrt(len(dfEnergy)));
+
+n, bins, patches = plt.hist(dfEnergy['Energy (kWh)'], bins=binEdges, density=True, rwidth=0.8, color='#607c8e', edgecolor='white', linewidth=1.0);
+
+plt.xlabel('Energy (kWh)')
+#plt.xticks(np.arange(minVal, maxVal, 5))
+plt.ylabel('Frequency')
+plt.title('Energy Per Session')
+#plt.grid()
+
+
+#%% Plot Session Duration Histogram
+
+qE_high = dfEnergy['Duration (h)'].quantile(0.9545); #remove 2 std dev outlier
+qE_low = dfEnergy['Duration (h)'].quantile(1-0.9545); #remove 2 std dev outlier
+
+df_time = dfEnergy[(dfEnergy['Duration (h)'] > qE_low) & (dfEnergy['Duration (h)'] < qE_high)]
+
+df_time = pd.DataFrame(df_time, columns=['EVSE ID', 'Station Name', 'Plug In Event Id', 'Duration (h)', 'Duration (m)', 'Charging (h)', 'Charging (m)', 'Energy (kWh)'] ) 
+df_time = df_time.reset_index(drop=True)
+df_time['Duration (m)'] = df_time['Duration (h)'] * 60
+df_time['Charging (m)'] = df_time['Charging (h)'] * 60
