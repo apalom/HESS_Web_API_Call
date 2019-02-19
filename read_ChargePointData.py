@@ -29,24 +29,39 @@ dataTypes = data.dtypes;
 
 allColumns = list(data);
 
-#%% Aggregate Data: 
+#%% Data Prep1
 
-colNames = ['EVSE ID', 'Port', 'Station Name', 'Plug In Event Id', 'Plug Connect Time', 'Plug Disconnect Time', 
-            'Power Start Time', 'Power End Time', 'Peak Power (AC kW)', 'Rolling Avg. Power (AC kW)', 'Energy Consumed (AC kWh)', 
-            'Start Time', 'End Time', 'Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)', 'Energy (kWh)', 'Gasoline Savings', 
-            'Port Type', 'Address 1', 'City', 'State/Province', 'Postal Code', 'Country', 'Latitude', 'Longitude', 'Ended By', 
-            'Driver Postal Code'] 
+#colNames = ['EVSE ID', 'Port', 'Station Name', 'Plug In Event Id', 'Plug Connect Time', 'Plug Disconnect Time', 
+#            'Power Start Time', 'Power End Time', 'Peak Power (AC kW)', 'Rolling Avg. Power (AC kW)', 'Energy Consumed (AC kWh)', 
+#            'Start Time', 'End Time', 'Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)', 'Energy (kWh)', 'Gasoline Savings', 
+#            'Port Type', 'Address 1', 'City', 'State/Province', 'Postal Code', 'Country', 'Latitude', 'Longitude', 'Ended By', 
+#            'Driver Postal Code'] 
 
-data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
-#%%
 #data['Plug Connect Time'] = pd.to_datetime(data['Plug Connect Time']);
 #data['Plug Disconnect Time'] = pd.to_datetime(data['Plug Disconnect Time']);
 #data['Power Start Time'] = pd.to_datetime(data['Power Start Time']);
 #data['Power End Time'] = pd.to_datetime(data['Power End Time']);
-data['Start Time'] = pd.to_datetime(data['Start Time']);
-data['End Time'] = pd.to_datetime(data['End Time']);
+
+#%% Data Columns for ChargePoint 'data/Lifetime-Session-Details.csv';
+
+colNames = ['EVSE ID', 'Port Number', 'Station Name', 'Plug In Event Id', 'Start Date', 'End Date', 
+            'Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)', 'Energy (kWh)',
+            'Ended By', 'Port Type', 'Latitude', 'Longitude', 'User ID', 'Driver Postal Code'];
+            
+data = pd.DataFrame(data, index=np.arange(len(dataRaw)), columns=colNames)
+
+data['Start Date'] = pd.to_datetime(data['Start Date']);
+data['End Date'] = pd.to_datetime(data['End Date']);
 data['Total Duration (hh:mm:ss)'] = pd.to_timedelta(data['Total Duration (hh:mm:ss)']);
 data['Charging Time (hh:mm:ss)'] = pd.to_timedelta(data['Charging Time (hh:mm:ss)']);
+
+dataHead = data.head(100);
+
+#%% Filter for Packsize
+
+dfPacksize = data[data['Station Name'].str.contains("PACKSIZE")]
+dfPacksize = dfPacksize.sort_values(by=['Start Date']);
+dfPacksize = dfPacksize.reset_index(drop=True);
 
 #%% Individual Charger for Pramod Team
 
@@ -640,7 +655,6 @@ plt.legend(['DCFC', 'Level 2'])
 #%% Export data
 
 dfMaverik.to_csv('maverik_Sessions.csv')
-
 
 #%% Export individual EVSE id dataframes as CSVs
 
