@@ -215,16 +215,11 @@ plt.xticks(np.arange(0, 26, 2))
 plt.ylabel('EVs')
 plt.title('Arrivals Per Hour Quartiles')
 
+#%% Sparrow Math
 
-#%% 4 Quadrant Cluster
-
-df2 = pd.DataFrame(df_time, index=np.arange(len(df_time)), columns=['Duration (h)', 'Charging (h)'])
-df2 = pd.DataFrame(df_time, index=np.arange(len(df_time)), columns=['Duration (h)', 'Charging (h)'])
-
-dfCluster = pd.concat([df1, df2], axis=1)
-
-#pd.concat([df1['c'], df2['c']], axis=1, keys=['df1', 'df2'])
-
-df1 = pd.DataFrame([1, 2, 3])
-df2 = pd.DataFrame(['a', 'b', 'c'])
-pd.concat([df1, df2], axis=1)
+# Morning
+grp1 = dfSparrow[(dfSparrow.PluginHour <= 12) & (dfSparrow.Sparrow <= 0.5)]
+grp2 = dfSparrow[(dfSparrow.PluginHour <= 12) & (dfSparrow.Sparrow > 0.5)]
+#Afternoon
+grp3 = dfSparrow[(dfSparrow.PluginHour > 12) & (dfSparrow.Sparrow <= 0.5)]
+grp4 = dfSparrow[(dfSparrow.PluginHour > 12) & (dfSparrow.Sparrow > 0.5)]
