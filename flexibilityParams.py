@@ -64,15 +64,16 @@ dfPacksize['StartHr'] = dfPacksize['StartHr'].apply(lambda x: round(x * 4) / 4)
 #%% Flexibility Parameters Start Hr
 
 binWidth = 0.25;
+bW = 1.0;
 binEdges = np.arange(0,24,binWidth);
+binEdges_kWh = np.arange(0,50,bW)
 allEVSEs = list(set(dfPacksize['EVSE ID']));
-allEVSEs = list([204577])
+#allEVSEs = list([204577])
 allHrs = list(set(dfPacksize['StartHr']));
-startHr = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
-connected = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
-
-connected = np.empty((len(binEdges)-1,2*len(allEVSEs)));
-connected[:] = np.nan;
+p_startHr = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
+p_connected = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
+p_energy = np.zeros((len(binEdges_kWh)-1,2*len(allEVSEs)));
+p_SOC = np.zeros((len(binEdges_kWh)-1,2*len(allEVSEs)));
 
 i = 0;
 
@@ -81,21 +82,41 @@ for EVSE in allEVSEs:
     dfTemp = dfPacksize.loc[dfPacksize['EVSE ID'] == EVSE]  
     
     dfTemp1 = dfTemp.loc[dfTemp['Port Number'] == '1']   
-    dfTemp1 = dfTemp1.sort_values(by=['StartHr']);         
-    n1 = np.histogram(dfTemp1['StartHr'], bins=binEdges, density=True);
+    dfTemp1 = dfTemp1.sort_values(by=['StartHr']);             
         
     dfTemp2 = dfTemp.loc[dfTemp['Port Number'] == '2']
     dfTemp2 = dfTemp2.sort_values(by=['StartHr']); 
+    
+    
+# --- Start Hr ---
+    n1 = np.histogram(dfTemp1['StartHr'], bins=binEdges, density=True);
+    p_startHr[:,2*i] = binWidth*n1[0]    #Port 1
+    
     n2 = np.histogram(dfTemp2['StartHr'], bins=binEdges, density=True);
+    p_startHr[:,2*i+1] = binWidth*n2[0]  #Port 2 
+
+# --- Energy ---
+    n1 = np.histogram(dfTemp1['Energy (kWh)'], bins=binEdges_kWh, density=True);
+    p_energy[:,2*i] = bW*n1[0]    #Port 1
     
-    # --- Start Hr ---
-    startHr[:,2*i] = binWidth*n1[0]
-    startHr[:,2*i+1] = binWidth*n2[0]   
+    n2 = np.histogram(dfTemp2['Energy (kWh)'], bins=binEdges_kWh, density=True);
+    p_energy[:,2*i+1] = bW*n2[0]  #Port 2 
+
+# --- Start SOC ---
+
+# SOC for dfPacksize is all NAN    
+
+#    n1 = np.histogram(dfTemp1['Energy (kWh)'], bins=binEdges_kWh, density=True);
+#    p_energy[:,2*i] = bW*n1[0]    #Port 1
+#    
+#    n2 = np.histogram(dfTemp2['Energy (kWh)'], bins=binEdges_kWh, density=True);
+#    p_energy[:,2*i+1] = bW*n2[0]  #Port 2 
     
-    # --- Connected ---
+    
+# --- Connected ---
     conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
-    conn[:] = np.nan;
-    for s in range(len(dfTemp1)-1):
+    conn = np.arange(0);
+    for s in range(len(dfTemp1)-1):    #Port 1
         print('temp1 ', EVSE, s)
         st = dfTemp1.StartHr.iloc[s]
         en = st + dfTemp1['Duration (h)'].iloc[s]
@@ -107,24 +128,19 @@ for EVSE in allEVSEs:
             enIdx1 = int(en1/0.25)
             en2 = en - 23.75
             enIdx2 = int(en2/0.25)
-            conn[stIdx:enIdx1,s] = np.arange(st, en1, 0.25);
-            conn[0:enIdx2,s] = np.arange(0, en2, 0.25);
+            conn = np.hstack((conn,np.arange(st, en1, 0.25)))
+            conn = np.hstack((conn,np.arange(0, en2, 0.25)))
         else:
-            #enIdx = int(en/0.25);
-            #if stIdx == 0:                
-            conn[stIdx:enIdx,s] = np.arange(st, en, 0.25);
-        conn = conn[~np.isnan(conn)]
+            conn = np.hstack((conn,np.arange(st, en, 0.25)))
     
     conn1 = conn;
-    #connTot = np.sum(conn, axis=1);
-    #connected[:,2*i] = (np.sum(conn, axis=1)/len(dfTemp1))/0.25
-    #len(dfTemp1)
     n1 = np.histogram(conn, bins=binEdges, density=True);
-    connected[:,2*i] = binWidth*n1[0];    
+    p_connected[:,2*i] = binWidth*n1[0];    
     
     conn = np.zeros((len(binEdges)-1,len(dfTemp2)));
-    conn[:] = np.nan;
-    for s in range(len(dfTemp2)-1):
+    conn = np.zeros((1,0));
+    conn = np.arange(0);
+    for s in range(len(dfTemp2)-1):   #Port 2
         print('temp2 ', EVSE, s)
         st = dfTemp2.StartHr.iloc[s]
         en = st + dfTemp2['Duration (h)'].iloc[s]
@@ -136,22 +152,14 @@ for EVSE in allEVSEs:
             enIdx1 = int(en1/0.25)
             en2 = en - 23.75
             enIdx2 = int(en2/0.25)
-            conn[stIdx:enIdx1,s] = np.arange(st, en1, 0.25);
-            conn[0:enIdx2,s] = np.arange(0, en2, 0.25);
+            conn = np.hstack((conn,np.arange(st, en1, 0.25)))
+            conn = np.hstack((conn,np.arange(0, en2, 0.25)))
         else:
-            #if stIdx == 0:
-            #enIdx = int(en/0.25);
-            conn[stIdx:enIdx,s] = np.arange(st, en, 0.25);
-        conn = conn[~np.isnan(conn)]
-            
-        #conn[stIdx:enIdx,s] = 1;
+            conn = np.hstack((conn,np.arange(st, en, 0.25)))
+
     conn2 = conn;
-    #connTot = np.sum(conn, axis=1);
     n2 = np.histogram(conn, bins=binEdges, density=True);
-    connected[:,2*i+1] = binWidth*n2[0];   
-    
-    #connected[:,2*i+1] = (np.sum(conn, axis=1)/len(dfTemp2))/0.25
-    #len(dfTemp2)
+    p_connected[:,2*i+1] = binWidth*n2[0];   
     
     i += 1;
 
