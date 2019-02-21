@@ -59,36 +59,114 @@ dfPacksize['Charging (h)'] = dfPacksize['Charging (h)'].apply(lambda x: round(x 
 dfPacksize['DayofYr'] = dfPacksize['Start Date'].apply(lambda x: x.dayofyear) 
 dfPacksize['DayofWk'] = dfPacksize['Start Date'].apply(lambda x: x.weekday()) 
 dfPacksize['StartHr'] = dfPacksize['Start Date'].apply(lambda x: x.hour + x.minute/60) 
-dfPacksize['StartHr'] = dfPacksize['StartHr'].apply(lambda x: round(x * 2) / 4) 
+dfPacksize['StartHr'] = dfPacksize['StartHr'].apply(lambda x: round(x * 4) / 4) 
 
-#%% Flexibility Parameters
+#%% Flexibility Parameters Start Hr
 
+binWidth = 0.25;
+binEdges = np.arange(0,24,binWidth);
+allEVSEs = list(set(dfPacksize['EVSE ID']));
+allEVSEs = list([204577])
+allHrs = list(set(dfPacksize['StartHr']));
+startHr = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
+connected = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 
-
+connected = np.empty((len(binEdges)-1,2*len(allEVSEs)));
+connected[:] = np.nan;
 
 i = 0;
-numBins = 10;
-connected = np.zeros((numBins,24*4))
-
-allEVSEs = list(set(dfPacksize['EVSE ID']));
-allHrs = list(set(dfPacksize['StartHr']));
 
 for EVSE in allEVSEs:
+    
     dfTemp = dfPacksize.loc[dfPacksize['EVSE ID'] == EVSE]  
     
-    dfTemp1 = dfTemp.loc[dfTemp['Port Number'] == '1']    
-    
-    stdD = np.std(dfTemp1['StartHr'])
-    n = len(dfTemp1)
-    h = #Scotts Normal Reference rule for bin width (h) = 3.5*stdDev / n^(1/3)
-    
-    n1 = np.histogram(dfTemp1['StartHr'], density=True);
-    
+    dfTemp1 = dfTemp.loc[dfTemp['Port Number'] == '1']   
+    dfTemp1 = dfTemp1.sort_values(by=['StartHr']);         
+    n1 = np.histogram(dfTemp1['StartHr'], bins=binEdges, density=True);
+        
     dfTemp2 = dfTemp.loc[dfTemp['Port Number'] == '2']
-    n2 = np.histogram(dfTemp2['StartHr'], density=True);
+    dfTemp2 = dfTemp2.sort_values(by=['StartHr']); 
+    n2 = np.histogram(dfTemp2['StartHr'], bins=binEdges, density=True);
+    
+    # --- Start Hr ---
+    startHr[:,2*i] = binWidth*n1[0]
+    startHr[:,2*i+1] = binWidth*n2[0]   
     
     # --- Connected ---
+    conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
+    conn[:] = np.nan;
+    for s in range(len(dfTemp1)-1):
+        print('temp1 ', EVSE, s)
+        st = dfTemp1.StartHr.iloc[s]
+        en = st + dfTemp1['Duration (h)'].iloc[s]
+        stIdx = int(st/0.25);
+        enIdx = int(en/0.25);        
+        if en >= 23.75:
+            print('[--- MIDNIGHT ---]')
+            en1 = 23.75
+            enIdx1 = int(en1/0.25)
+            en2 = en - 23.75
+            enIdx2 = int(en2/0.25)
+            conn[stIdx:enIdx1,s] = np.arange(st, en1, 0.25);
+            conn[0:enIdx2,s] = np.arange(0, en2, 0.25);
+        else:
+            #enIdx = int(en/0.25);
+            #if stIdx == 0:                
+            conn[stIdx:enIdx,s] = np.arange(st, en, 0.25);
+        conn = conn[~np.isnan(conn)]
+    
+    conn1 = conn;
+    #connTot = np.sum(conn, axis=1);
+    #connected[:,2*i] = (np.sum(conn, axis=1)/len(dfTemp1))/0.25
+    #len(dfTemp1)
+    n1 = np.histogram(conn, bins=binEdges, density=True);
+    connected[:,2*i] = binWidth*n1[0];    
+    
+    conn = np.zeros((len(binEdges)-1,len(dfTemp2)));
+    conn[:] = np.nan;
+    for s in range(len(dfTemp2)-1):
+        print('temp2 ', EVSE, s)
+        st = dfTemp2.StartHr.iloc[s]
+        en = st + dfTemp2['Duration (h)'].iloc[s]
+        stIdx = int(st/0.25);
+        enIdx = int(en/0.25);
+        if en >= 23.75: 
+            print('[--- MIDNIGHT ---]')
+            en1 = 23.75
+            enIdx1 = int(en1/0.25)
+            en2 = en - 23.75
+            enIdx2 = int(en2/0.25)
+            conn[stIdx:enIdx1,s] = np.arange(st, en1, 0.25);
+            conn[0:enIdx2,s] = np.arange(0, en2, 0.25);
+        else:
+            #if stIdx == 0:
+            #enIdx = int(en/0.25);
+            conn[stIdx:enIdx,s] = np.arange(st, en, 0.25);
+        conn = conn[~np.isnan(conn)]
+            
+        #conn[stIdx:enIdx,s] = 1;
+    conn2 = conn;
+    #connTot = np.sum(conn, axis=1);
+    n2 = np.histogram(conn, bins=binEdges, density=True);
+    connected[:,2*i+1] = binWidth*n2[0];   
+    
+    #connected[:,2*i+1] = (np.sum(conn, axis=1)/len(dfTemp2))/0.25
+    #len(dfTemp2)
+    
     i += 1;
+
+#%% Flexibility Parameters Connected
+
+conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
+
+for s in range(len(dfTemp1)):
+    st = dfTemp.StartHr.iloc[s]
+    en = st + dfTemp['Duration (h)'].iloc[s]
+    stIdx = int(st/0.25);
+    enIdx = int(en/0.25);
+    conn[stIdx:enIdx,s] = 1;
+
+connProb = np.sum(conn, axis=1)/len(dfTemp1)
 
 #%% df Energy
 
