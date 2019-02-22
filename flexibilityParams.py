@@ -63,7 +63,7 @@ dfPacksize['StartHr'] = dfPacksize['StartHr'].apply(lambda x: round(x * 4) / 4)
 dfPacksize['EndHr'] = dfPacksize['End Date'].apply(lambda x: x.hour + x.minute/60) 
 dfPacksize['EndHr'] = dfPacksize['EndHr'].apply(lambda x: round(x * 4) / 4) 
 
-#%% Flexibility Parameters Start Hr
+#%% Flexibility Parameters  
 
 binWidth = 0.25;
 bW = 1.0;
@@ -75,6 +75,7 @@ allHrs = list(set(dfPacksize['StartHr']));
 p_startHr = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 p_endHr = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 p_connected = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
+p_charging = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 p_energy = np.zeros((len(binEdges_kWh)-1,2*len(allEVSEs)));
 p_SOC = np.zeros((len(binEdges_kWh)-1,2*len(allEVSEs)));
 
@@ -88,8 +89,7 @@ for EVSE in allEVSEs:
     dfTemp1 = dfTemp1.sort_values(by=['StartHr']);             
         
     dfTemp2 = dfTemp.loc[dfTemp['Port Number'] == '2']
-    dfTemp2 = dfTemp2.sort_values(by=['StartHr']); 
-    
+    dfTemp2 = dfTemp2.sort_values(by=['StartHr']);     
     
 # --- Start Hr ---
     n1 = np.histogram(dfTemp1['StartHr'], bins=binEdges, density=True);
@@ -126,10 +126,68 @@ for EVSE in allEVSEs:
 # --- Connected ---
     conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
     conn = np.arange(0);
+    seshkW = np.zeros((int(24.0/0.25),1))
     for s in range(len(dfTemp1)-1):    #Port 1
         print('temp1 ', EVSE, s)
         st = dfTemp1.StartHr.iloc[s]
         en = st + dfTemp1['Duration (h)'].iloc[s]
+        avgkW = dfTemp1['Energy (kWh)'].iloc[s]/dfTemp1['Duration (h)'].iloc[s]
+        stIdx = int(st/0.25);
+        enIdx = int(en/0.25);        
+        if en >= 23.75:
+            print('[--- MIDNIGHT ---]')
+            en1 = 23.75
+            enIdx1 = int(en1/0.25)
+            en2 = en - 23.75
+            enIdx2 = int(en2/0.25)
+            conn = np.hstack((conn,np.arange(st, en1, 0.25)))
+            conn = np.hstack((conn,np.arange(0, en2, 0.25)))
+            seshkW[stIdx:enIdx] = avgkW
+            seshkW[0:enIdx2] = avgkW
+        else:
+            conn = np.hstack((conn,np.arange(st, en, 0.25)))
+            seshkW[stIdx:enIdx] = avgkW
+    
+    conn1 = conn;
+    n1 = np.histogram(conn, bins=binEdges, density=True);
+    p_connected[:,2*i] = binWidth*n1[0];    
+    
+    conn = np.zeros((len(binEdges)-1,len(dfTemp2)));
+    conn = np.zeros((1,0));
+    conn = np.arange(0);
+    seshkW = np.zeros((int(24.0/0.25),1))
+    for s in range(len(dfTemp2)-1):   #Port 2
+        print('temp2 ', EVSE, s)
+        st = dfTemp2.StartHr.iloc[s]
+        en = st + dfTemp2['Duration (h)'].iloc[s]
+        avgkW = dfTemp2['Energy (kWh)'].iloc[s]/dfTemp2['Duration (h)'].iloc[s]
+        stIdx = int(st/0.25);
+        enIdx = int(en/0.25);
+        if en >= 23.75: 
+            print('[--- MIDNIGHT ---]')
+            en1 = 23.75
+            enIdx1 = int(en1/0.25)
+            en2 = en - 23.75
+            enIdx2 = int(en2/0.25)
+            conn = np.hstack((conn,np.arange(st, en1, 0.25)))
+            conn = np.hstack((conn,np.arange(0, en2, 0.25)))
+                        seshkW[stIdx:enIdx] = avgkW
+            seshkW[0:enIdx2] = avgkW
+        else:
+            conn = np.hstack((conn,np.arange(st, en, 0.25)))
+            seshkW[stIdx:enIdx] = avgkW
+
+    conn2 = conn;
+    n2 = np.histogram(conn, bins=binEdges, density=True);
+    p_connected[:,2*i+1] = binWidth*n2[0];   
+    
+# --- Charging ---
+    conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
+    conn = np.arange(0);
+    for s in range(len(dfTemp1)-1):    #Port 1
+        print('temp1 ', EVSE, s)
+        st = dfTemp1.StartHr.iloc[s]
+        en = st + dfTemp1['Charging (h)'].iloc[s]
         stIdx = int(st/0.25);
         enIdx = int(en/0.25);        
         if en >= 23.75:
@@ -145,7 +203,7 @@ for EVSE in allEVSEs:
     
     conn1 = conn;
     n1 = np.histogram(conn, bins=binEdges, density=True);
-    p_connected[:,2*i] = binWidth*n1[0];    
+    p_charging[:,2*i] = binWidth*n1[0];    
     
     conn = np.zeros((len(binEdges)-1,len(dfTemp2)));
     conn = np.zeros((1,0));
@@ -153,7 +211,7 @@ for EVSE in allEVSEs:
     for s in range(len(dfTemp2)-1):   #Port 2
         print('temp2 ', EVSE, s)
         st = dfTemp2.StartHr.iloc[s]
-        en = st + dfTemp2['Duration (h)'].iloc[s]
+        en = st + dfTemp2['Charging (h)'].iloc[s]
         stIdx = int(st/0.25);
         enIdx = int(en/0.25);
         if en >= 23.75: 
@@ -169,8 +227,8 @@ for EVSE in allEVSEs:
 
     conn2 = conn;
     n2 = np.histogram(conn, bins=binEdges, density=True);
-    p_connected[:,2*i+1] = binWidth*n2[0];   
-    
+    p_charging[:,2*i+1] = binWidth*n2[0];       
+
     i += 1;
 
 #%% Flexibility Parameters Connected
