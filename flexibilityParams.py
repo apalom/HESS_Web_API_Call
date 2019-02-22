@@ -60,6 +60,8 @@ dfPacksize['DayofYr'] = dfPacksize['Start Date'].apply(lambda x: x.dayofyear)
 dfPacksize['DayofWk'] = dfPacksize['Start Date'].apply(lambda x: x.weekday()) 
 dfPacksize['StartHr'] = dfPacksize['Start Date'].apply(lambda x: x.hour + x.minute/60) 
 dfPacksize['StartHr'] = dfPacksize['StartHr'].apply(lambda x: round(x * 4) / 4) 
+dfPacksize['EndHr'] = dfPacksize['End Date'].apply(lambda x: x.hour + x.minute/60) 
+dfPacksize['EndHr'] = dfPacksize['EndHr'].apply(lambda x: round(x * 4) / 4) 
 
 #%% Flexibility Parameters Start Hr
 
@@ -71,6 +73,7 @@ allEVSEs = list(set(dfPacksize['EVSE ID']));
 #allEVSEs = list([204577])
 allHrs = list(set(dfPacksize['StartHr']));
 p_startHr = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
+p_endHr = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 p_connected = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 p_energy = np.zeros((len(binEdges_kWh)-1,2*len(allEVSEs)));
 p_SOC = np.zeros((len(binEdges_kWh)-1,2*len(allEVSEs)));
@@ -94,7 +97,14 @@ for EVSE in allEVSEs:
     
     n2 = np.histogram(dfTemp2['StartHr'], bins=binEdges, density=True);
     p_startHr[:,2*i+1] = binWidth*n2[0]  #Port 2 
-
+    
+# --- End Hr ---
+    n1 = np.histogram(dfTemp1['EndHr'], bins=binEdges, density=True);
+    p_endHr[:,2*i] = binWidth*n1[0]    #Port 1
+    
+    n2 = np.histogram(dfTemp2['EndHr'], bins=binEdges, density=True);
+    p_endHr[:,2*i+1] = binWidth*n2[0]  #Port 2     
+    
 # --- Energy ---
     n1 = np.histogram(dfTemp1['Energy (kWh)'], bins=binEdges_kWh, density=True);
     p_energy[:,2*i] = bW*n1[0]    #Port 1
