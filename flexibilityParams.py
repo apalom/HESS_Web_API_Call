@@ -255,6 +255,47 @@ for s in range(len(dfTemp1)):
 
 connProb = np.sum(conn, axis=1)/len(dfTemp1)
 
+#%%
+
+from pylab import *
+from scipy.optimize import curve_fit
+
+variable = 'StartHr'
+
+data = dfPacksize[variable];
+morning = dfPacksize.loc[dfPacksize[variable] <= 12]
+
+exp_mu1 = np.median(morning[variable]);
+exp_sigma1 = np.std(morning['StartHr']);
+exp_A1 = len(morning.loc[morning['StartHr'] == exp_mu1]);
+
+afternoon = dfPacksize.loc[dfPacksize[variable] > 12]
+exp_mu2 = np.median(afternoon[variable]);
+exp_sigma2 = np.std(afternoon['StartHr']);
+exp_A2 = len(afternoon.loc[afternoon['StartHr'] == exp_mu2]);
+
+#data = concatenate((normal(1,.2,5000),normal(2,.2,2500)))
+y,x,_=plt.hist(data,bins=binEdges,density=False,alpha=.3,label='data')
+
+x=(x[1:]+x[:-1])/2 # for len(x)==len(y)
+
+def gauss(x,mu,sigma,A):
+    return A*np.exp(-(x-mu)**2/2/sigma**2)
+
+def bimodal(x,mu1,sigma1,A1,mu2,sigma2,A2):
+    return gauss(x,mu1,sigma1,A1)+gauss(x,mu2,sigma2,A2)
+
+expected=(exp_mu1, exp_sigma1, exp_A1, exp_mu2, exp_sigma2, exp_A2)
+params,cov=curve_fit(bimodal,x,y,expected)
+sigma=np.sqrt(np.diag(cov))
+plt.plot(x,bimodal(x,*params),color='red',lw=1,label='model')
+
+plt.title(variable)
+plt.xlim([0,24])
+plt.xticks(np.arange(0,26,2))
+plt.legend()
+print(params,'\n',sigma)    
+
 #%% Avg. Power Histogram
 plt.style.use('default')
 
