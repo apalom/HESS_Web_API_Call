@@ -192,53 +192,53 @@ for EVSE in allEVSEs:
     p_connected[:,2*i+1] = binWidth*n2[0];   
     p_profile[:,2*i+1] = seshkWavg;    
     
-# --- Charging ---
-    conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
-    conn = np.arange(0);
-    for s in range(len(dfTemp1)-1):    #Port 1
-        print('temp1 ', EVSE, s)
-        st = dfTemp1.StartHr.iloc[s]
-        en = st + dfTemp1['Charging (h)'].iloc[s]
-        stIdx = int(st/0.25);
-        enIdx = int(en/0.25);        
-        if en >= 23.75:
-            print('[--- MIDNIGHT ---]')
-            en1 = 23.75
-            enIdx1 = int(en1/0.25)
-            en2 = en - 23.75
-            enIdx2 = int(en2/0.25)
-            conn = np.hstack((conn,np.arange(st, en1, 0.25)))
-            conn = np.hstack((conn,np.arange(0, en2, 0.25)))
-        else:
-            conn = np.hstack((conn,np.arange(st, en, 0.25)))
-    
-    conn1 = conn;
-    n1 = np.histogram(conn, bins=binEdges, density=True);
-    p_charging[:,2*i] = binWidth*n1[0];    
-    
-    conn = np.zeros((len(binEdges)-1,len(dfTemp2)));
-    conn = np.zeros((1,0));
-    conn = np.arange(0);
-    for s in range(len(dfTemp2)-1):   #Port 2
-        print('temp2 ', EVSE, s)
-        st = dfTemp2.StartHr.iloc[s]
-        en = st + dfTemp2['Charging (h)'].iloc[s]
-        stIdx = int(st/0.25);
-        enIdx = int(en/0.25);
-        if en >= 23.75: 
-            print('[--- MIDNIGHT ---]')
-            en1 = 23.75
-            enIdx1 = int(en1/0.25)
-            en2 = en - 23.75
-            enIdx2 = int(en2/0.25)
-            conn = np.hstack((conn,np.arange(st, en1, 0.25)))
-            conn = np.hstack((conn,np.arange(0, en2, 0.25)))
-        else:
-            conn = np.hstack((conn,np.arange(st, en, 0.25)))
-
-    conn2 = conn;
-    n2 = np.histogram(conn, bins=binEdges, density=True);
-    p_charging[:,2*i+1] = binWidth*n2[0];       
+## --- Charging ---
+#    conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
+#    conn = np.arange(0);
+#    for s in range(len(dfTemp1)-1):    #Port 1
+#        print('temp1 ', EVSE, s)
+#        st = dfTemp1.StartHr.iloc[s]
+#        en = st + dfTemp1['Charging (h)'].iloc[s]
+#        stIdx = int(st/0.25);
+#        enIdx = int(en/0.25);        
+#        if en >= 23.75:
+#            print('[--- MIDNIGHT ---]')
+#            en1 = 23.75
+#            enIdx1 = int(en1/0.25)
+#            en2 = en - 23.75
+#            enIdx2 = int(en2/0.25)
+#            conn = np.hstack((conn,np.arange(st, en1, 0.25)))
+#            conn = np.hstack((conn,np.arange(0, en2, 0.25)))
+#        else:
+#            conn = np.hstack((conn,np.arange(st, en, 0.25)))
+#    
+#    conn1 = conn;
+#    n1 = np.histogram(conn, bins=binEdges, density=True);
+#    p_charging[:,2*i] = binWidth*n1[0];    
+#    
+#    conn = np.zeros((len(binEdges)-1,len(dfTemp2)));
+#    conn = np.zeros((1,0));
+#    conn = np.arange(0);
+#    for s in range(len(dfTemp2)-1):   #Port 2
+#        print('temp2 ', EVSE, s)
+#        st = dfTemp2.StartHr.iloc[s]
+#        en = st + dfTemp2['Charging (h)'].iloc[s]
+#        stIdx = int(st/0.25);
+#        enIdx = int(en/0.25);
+#        if en >= 23.75: 
+#            print('[--- MIDNIGHT ---]')
+#            en1 = 23.75
+#            enIdx1 = int(en1/0.25)
+#            en2 = en - 23.75
+#            enIdx2 = int(en2/0.25)
+#            conn = np.hstack((conn,np.arange(st, en1, 0.25)))
+#            conn = np.hstack((conn,np.arange(0, en2, 0.25)))
+#        else:
+#            conn = np.hstack((conn,np.arange(st, en, 0.25)))
+#
+#    conn2 = conn;
+#    n2 = np.histogram(conn, bins=binEdges, density=True);
+#    p_charging[:,2*i+1] = binWidth*n2[0];       
 
     i += 1;
 
@@ -260,19 +260,56 @@ connProb = np.sum(conn, axis=1)/len(dfTemp1)
 from pylab import *
 from scipy.optimize import curve_fit
 
-variable = 'StartHr'
+#variable = 'EndHr'
+#split = 15
+#paramIdx = ['mu1', 'sigma1', 'A1', 'mu2', 'sigma2', 'A2']
+#paramCol = ['expected', 'model']
+#df_params = pd.DataFrame(data=0.0, index=paramIdx, columns=paramCol)
+#
+#data = dfPacksize[variable];
+#morning = dfPacksize.loc[dfPacksize[variable] <= split]
+#
+#exp_mu1 = np.median(morning[variable]);
+#exp_sigma1 = np.std(morning[variable]);
+#exp_A1 = len(morning.loc[morning[variable] == exp_mu1]);
+#
+#afternoon = dfPacksize.loc[dfPacksize[variable] > split]
+#exp_mu2 = np.median(afternoon[variable]);
+#exp_sigma2 = np.std(afternoon[variable]);
+#exp_A2 = len(afternoon.loc[afternoon[variable] == exp_mu2]);
+#
+#df_params['expected'].at['mu1'] = exp_mu1;
+#df_params['expected'].at['sigma1'] = exp_sigma1;
+#df_params['expected'].at['A1'] = exp_A1;
+#df_params['expected'].at['mu2'] = exp_mu2;
+#df_params['expected'].at['sigma2'] = exp_sigma2;
+#df_params['expected'].at['A2'] = exp_A2;
 
-data = dfPacksize[variable];
-morning = dfPacksize.loc[dfPacksize[variable] <= 12]
+variable = 'Connected'
+split = 13
 
-exp_mu1 = np.median(morning[variable]);
-exp_sigma1 = np.std(morning['StartHr']);
-exp_A1 = len(morning.loc[morning['StartHr'] == exp_mu1]);
+paramIdx = ['mu1', 'sigma1', 'A1', 'mu2', 'sigma2', 'A2']
+paramCol = ['expected', 'model']
+df_params = pd.DataFrame(data=0.0, index=paramIdx, columns=paramCol)
 
-afternoon = dfPacksize.loc[dfPacksize[variable] > 12]
-exp_mu2 = np.median(afternoon[variable]);
-exp_sigma2 = np.std(afternoon['StartHr']);
-exp_A2 = len(afternoon.loc[afternoon['StartHr'] == exp_mu2]);
+data = conn;
+morning = conn[conn <= split]
+
+exp_mu1 = np.median(morning);
+exp_sigma1 = np.std(morning);
+exp_A1 = len(morning[morning == exp_mu1]);
+
+afternoon = conn[conn > split]
+exp_mu2 = np.median(afternoon);
+exp_sigma2 = np.std(afternoon);
+exp_A2 = len(afternoon[afternoon == exp_mu2]);
+
+df_params['expected'].at['mu1'] = exp_mu1;
+df_params['expected'].at['sigma1'] = exp_sigma1;
+df_params['expected'].at['A1'] = exp_A1;
+df_params['expected'].at['mu2'] = exp_mu2;
+df_params['expected'].at['sigma2'] = exp_sigma2;
+df_params['expected'].at['A2'] = exp_A2;
 
 #data = concatenate((normal(1,.2,5000),normal(2,.2,2500)))
 y,x,_=plt.hist(data,bins=binEdges,density=False,alpha=.3,label='data')
@@ -287,6 +324,7 @@ def bimodal(x,mu1,sigma1,A1,mu2,sigma2,A2):
 
 expected=(exp_mu1, exp_sigma1, exp_A1, exp_mu2, exp_sigma2, exp_A2)
 params,cov=curve_fit(bimodal,x,y,expected)
+df_params['model'] = params
 sigma=np.sqrt(np.diag(cov))
 plt.plot(x,bimodal(x,*params),color='red',lw=1,label='model')
 
@@ -294,7 +332,8 @@ plt.title(variable)
 plt.xlim([0,24])
 plt.xticks(np.arange(0,26,2))
 plt.legend()
-print(params,'\n',sigma)    
+#print(params,'\n',sigma)    
+print(df_params)
 
 #%% Avg. Power Histogram
 plt.style.use('default')
