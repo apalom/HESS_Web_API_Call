@@ -135,7 +135,7 @@ for EVSE in allEVSEs:
         print('temp1 ', EVSE, s)
         st = dfTemp1.StartHr.iloc[s]
         en = st + dfTemp1['Duration (h)'].iloc[s]
-        avgkW = dfTemp1['Energy (kWh)'].iloc[s]/dfTemp1['Duration (h)'].iloc[s]
+        avgkW = dfTemp1['Energy (kWh)'].iloc[s]/(4*dfTemp1['Duration (h)'].iloc[s])
         stIdx = int(st/0.25);
         enIdx = int(en/0.25);        
         if en >= 23.75:
@@ -168,7 +168,7 @@ for EVSE in allEVSEs:
         print('temp2 ', EVSE, s)
         st = dfTemp2.StartHr.iloc[s]
         en = st + dfTemp2['Duration (h)'].iloc[s]
-        avgkW = dfTemp2['Energy (kWh)'].iloc[s]/dfTemp2['Duration (h)'].iloc[s]
+        avgkW = dfTemp2['Energy (kWh)'].iloc[s]/(4*dfTemp2['Duration (h)'].iloc[s])
         stIdx = int(st/0.25);
         enIdx = int(en/0.25);
         if en >= 23.75: 
