@@ -47,8 +47,6 @@ dataHead = data.head(100);
 #%% Filter for Packsize
 
 dfPacksize = data[data['Station Name'].str.contains("PACKSIZE")]
-dfPacksize = dfPacksize.sort_values(by=['Start Date']);
-dfPacksize = dfPacksize.reset_index(drop=True);
 
 dfPacksize = dfPacksize.loc[data['Energy (kWh)'].notna()]
 dfPacksize['Duration (h)'] = dfPacksize['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
@@ -62,12 +60,17 @@ dfPacksize['StartHr'] = dfPacksize['Start Date'].apply(lambda x: x.hour + x.minu
 dfPacksize['StartHr'] = dfPacksize['StartHr'].apply(lambda x: round(x * 4) / 4) 
 dfPacksize['EndHr'] = dfPacksize['End Date'].apply(lambda x: x.hour + x.minute/60) 
 dfPacksize['EndHr'] = dfPacksize['EndHr'].apply(lambda x: round(x * 4) / 4) 
+dfPacksize['AvgPwr'] = dfPacksize['Energy (kWh)']/dfPacksize['Duration (h)']
+
+dfPacksize = dfPacksize.loc[dfPacksize['Duration (h)'] > 0]
+dfPacksize = dfPacksize.sort_values(by=['Start Date']);
+dfPacksize = dfPacksize.reset_index(drop=True);
 
 #%% Flexibility Parameters  
 
 binWidth = 0.25;
 bW = 1.0;
-binEdges = np.arange(0,24,binWidth);
+binEdges = np.arange(0,24.25,binWidth);
 binEdges_kWh = np.arange(0,50,bW)
 allEVSEs = list(set(dfPacksize['EVSE ID']));
 #allEVSEs = list([204577])
@@ -77,7 +80,7 @@ p_endHr = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 p_connected = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 p_charging = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 p_energy = np.zeros((len(binEdges_kWh)-1,2*len(allEVSEs)));
-p_SOC = np.zeros((len(binEdges_kWh)-1,2*len(allEVSEs)));
+p_profile = np.zeros((len(binEdges)-1,2*len(allEVSEs)));
 
 i = 0;
 
@@ -127,6 +130,7 @@ for EVSE in allEVSEs:
     conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
     conn = np.arange(0);
     seshkW = np.zeros((int(24.0/0.25),1))
+    seshkW0 = np.zeros((int(24.0/0.25),1))
     for s in range(len(dfTemp1)-1):    #Port 1
         print('temp1 ', EVSE, s)
         st = dfTemp1.StartHr.iloc[s]
@@ -148,14 +152,18 @@ for EVSE in allEVSEs:
             conn = np.hstack((conn,np.arange(st, en, 0.25)))
             seshkW[stIdx:enIdx] = avgkW
     
+    seshkW0 = np.hstack((seshkW0,seshkW))
+    seshkWavg = np.mean(seshkW0, axis = 1)
     conn1 = conn;
     n1 = np.histogram(conn, bins=binEdges, density=True);
     p_connected[:,2*i] = binWidth*n1[0];    
+    p_profile[:,2*i] = seshkWavg;    
     
     conn = np.zeros((len(binEdges)-1,len(dfTemp2)));
     conn = np.zeros((1,0));
     conn = np.arange(0);
     seshkW = np.zeros((int(24.0/0.25),1))
+    seshkW0 = np.zeros((int(24.0/0.25),1))
     for s in range(len(dfTemp2)-1):   #Port 2
         print('temp2 ', EVSE, s)
         st = dfTemp2.StartHr.iloc[s]
@@ -171,15 +179,18 @@ for EVSE in allEVSEs:
             enIdx2 = int(en2/0.25)
             conn = np.hstack((conn,np.arange(st, en1, 0.25)))
             conn = np.hstack((conn,np.arange(0, en2, 0.25)))
-                        seshkW[stIdx:enIdx] = avgkW
+            seshkW[stIdx:enIdx] = avgkW
             seshkW[0:enIdx2] = avgkW
         else:
             conn = np.hstack((conn,np.arange(st, en, 0.25)))
             seshkW[stIdx:enIdx] = avgkW
 
+    seshkW0 = np.hstack((seshkW0,seshkW))
+    seshkWavg = np.mean(seshkW0, axis = 1)
     conn2 = conn;
     n2 = np.histogram(conn, bins=binEdges, density=True);
     p_connected[:,2*i+1] = binWidth*n2[0];   
+    p_profile[:,2*i+1] = seshkWavg;    
     
 # --- Charging ---
     conn = np.zeros((len(binEdges)-1,len(dfTemp1)));
@@ -243,6 +254,18 @@ for s in range(len(dfTemp1)):
     conn[stIdx:enIdx,s] = 1;
 
 connProb = np.sum(conn, axis=1)/len(dfTemp1)
+
+#%% Avg. Power Histogram
+plt.style.use('default')
+
+binEdges = np.arange(0,24,binWidth);
+
+plt.hist(dfPacksize['AvgPwr'], bins=binEdges, density=True, rwidth=1.0, color='#607c8e', edgecolor='white', linewidth=1.0);
+plt.title('Session Power Histogram')
+plt.xlabel('Power (kW)')
+plt.ylabel('Frequency')
+
+plt.show()
 
 #%% df Energy
 
