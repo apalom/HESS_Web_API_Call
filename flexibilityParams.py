@@ -44,6 +44,29 @@ data['Charging Time (hh:mm:ss)'] = pd.to_timedelta(data['Charging Time (hh:mm:ss
 
 dataHead = data.head(100);
 
+
+#%% All EVSEs
+
+df_All = data.loc[data['Energy (kWh)'].notna()]
+df_All['Duration (h)'] = df_All['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
+df_All['Duration (h)'] = df_All['Duration (h)'].apply(lambda x: round(x * 2) / 4) 
+df_All['Charging (h)'] = df_All['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
+df_All['Charging (h)'] = df_All['Charging (h)'].apply(lambda x: round(x * 2) / 4) 
+
+df_All['DayofYr'] = df_All['Start Date'].apply(lambda x: x.dayofyear) 
+df_All['DayofWk'] = df_All['Start Date'].apply(lambda x: x.weekday()) 
+df_All['StartHr'] = df_All['Start Date'].apply(lambda x: x.hour + x.minute/60) 
+df_All['StartHr'] = df_All['StartHr'].apply(lambda x: round(x * 4) / 4) 
+df_All['EndHr'] = df_All['End Date'].apply(lambda x: x.hour + x.minute/60) 
+df_All = df_All.loc[df_All['EndHr'].notna()]
+df_All['EndHr'] = df_All['EndHr'].apply(lambda x: round(x * 4) / 4) 
+df_All['AvgPwr'] = df_All['Energy (kWh)']/df_All['Duration (h)']
+
+df_All = df_All.loc[df_All['Duration (h)'] > 0]
+df_All = df_All.sort_values(by=['Start Date']);
+df_All = df_All.reset_index(drop=True);
+
+
 #%% Filter for Packsize
 
 dfPacksize = data[data['Station Name'].str.contains("PACKSIZE")]
