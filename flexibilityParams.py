@@ -526,3 +526,46 @@ grp2 = dfSparrow[(dfSparrow.PluginHour <= 12) & (dfSparrow.Sparrow > 0.5)]
 #Afternoon
 grp3 = dfSparrow[(dfSparrow.PluginHour > 12) & (dfSparrow.Sparrow <= 0.5)]
 grp4 = dfSparrow[(dfSparrow.PluginHour > 12) & (dfSparrow.Sparrow > 0.5)]
+
+#%% Measure Min Distance
+
+from geopy.distance import geodesic
+#evse0 = (40.7426, -111.981)
+#cleveland_oh = (41.499498, -81.695391)
+#print(geodesic(evse0, cleveland_oh).miles)
+
+colNames = ['EVSE ID', 'Port Number', 'Station Name', 'Plug In Event Id', 'Start Date', 'End Date', 
+            'Total Duration (hh:mm:ss)', 'Charging Time (hh:mm:ss)', 'Energy (kWh)',
+            'Ended By', 'Port Type', 'Latitude', 'Longitude', 'User ID', 'Driver Postal Code', 'City', 'Population'];
+            
+dfPacksize = pd.DataFrame(dfPacksize, index=np.arange(len(dfPacksize)), columns=colNames)
+
+allEVSEs = list(set(dfPacksize['EVSE ID']));
+allCities = list(set(dfCities['City']));
+
+minDist = np.zeros((len(allEVSEs),4));
+
+dfNearest = pd.DataFrame(np.zeros((len(allEVSEs),4)), columns=['EVSE','City','Population','Dist (mi)'])
+
+i = 0;
+distPrev = 1E9;
+distAll = np.zeros((len(dfCities),1))
+
+for EVSE in allEVSEs:
+    
+    dfTemp = dfPacksize.loc[dfPacksize['EVSE ID'] == EVSE] 
+    gpsEVSE = (dfTemp['Latitude'].iloc[0], dfTemp['Longitude'].iloc[0])
+    
+    for index, row in dfCities.iterrows():
+        print(index, row['City'])
+        gpsCity = (row['Lat'], row['Lng'])
+        distAll[index] = geodesic(gpsEVSE, gpsCity).miles;
+    
+    idx = np.argmin(distAll)
+    
+    dfNearest['EVSE'].loc[i] = EVSE   
+    dfNearest['City'].loc[i] = dfCities['City'].iloc[idx]
+    dfNearest['Population'].loc[i] = dfCities['2019 Population'].iloc[idx]
+    dfNearest['Dist (mi)'].loc[i] = np.min(distAll)
+    i += 1
+    
