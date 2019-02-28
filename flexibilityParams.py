@@ -44,28 +44,71 @@ data['Charging Time (hh:mm:ss)'] = pd.to_timedelta(data['Charging Time (hh:mm:ss
 
 dataHead = data.head(100);
 
-
 #%% All EVSEs
 
-df_All = data.loc[data['Energy (kWh)'].notna()]
-df_All['Duration (h)'] = df_All['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
-df_All['Duration (h)'] = df_All['Duration (h)'].apply(lambda x: round(x * 2) / 4) 
-df_All['Charging (h)'] = df_All['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
-df_All['Charging (h)'] = df_All['Charging (h)'].apply(lambda x: round(x * 2) / 4) 
+dfAll = data.loc[data['Energy (kWh)'].notna()]
+dfAll['Duration (h)'] = dfAll['Total Duration (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
+dfAll['Duration (h)'] = dfAll['Duration (h)'].apply(lambda x: round(x * 2) / 4) 
+dfAll['Charging (h)'] = dfAll['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
+dfAll['Charging (h)'] = dfAll['Charging (h)'].apply(lambda x: round(x * 2) / 4) 
 
-df_All['DayofYr'] = df_All['Start Date'].apply(lambda x: x.dayofyear) 
-df_All['DayofWk'] = df_All['Start Date'].apply(lambda x: x.weekday()) 
-df_All['StartHr'] = df_All['Start Date'].apply(lambda x: x.hour + x.minute/60) 
-df_All['StartHr'] = df_All['StartHr'].apply(lambda x: round(x * 4) / 4) 
-df_All['EndHr'] = df_All['End Date'].apply(lambda x: x.hour + x.minute/60) 
-df_All = df_All.loc[df_All['EndHr'].notna()]
-df_All['EndHr'] = df_All['EndHr'].apply(lambda x: round(x * 4) / 4) 
-df_All['AvgPwr'] = df_All['Energy (kWh)']/df_All['Duration (h)']
+dfAll['DayofYr'] = dfAll['Start Date'].apply(lambda x: x.dayofyear) 
+dfAll['DayofWk'] = dfAll['Start Date'].apply(lambda x: x.weekday()) 
+dfAll['StartHr'] = dfAll['Start Date'].apply(lambda x: x.hour + x.minute/60) 
+dfAll['StartHr'] = dfAll['StartHr'].apply(lambda x: round(x * 4) / 4) 
+dfAll['EndHr'] = dfAll['End Date'].apply(lambda x: x.hour + x.minute/60) 
+dfAll = dfAll.loc[dfAll['EndHr'].notna()]
+dfAll['EndHr'] = dfAll['EndHr'].apply(lambda x: round(x * 4) / 4) 
+dfAll['AvgPwr'] = dfAll['Energy (kWh)']/dfAll['Duration (h)']
 
-df_All = df_All.loc[df_All['Duration (h)'] > 0]
-df_All = df_All.sort_values(by=['Start Date']);
-df_All = df_All.reset_index(drop=True);
+dfAll = dfAll.loc[dfAll['Duration (h)'] > 0]
+dfAll = dfAll.sort_values(by=['Start Date']);
+dfAll = dfAll.reset_index(drop=True);
 
+allEVSEs = list(set(dfAll['EVSE ID']));
+allCities = list(set(dfCities['City']));
+
+#%% All EVSE Energy 
+
+
+dfEnergyAll = pd.DataFrame(index=allEVSEs, columns=['TotEnergy','DaysOn','Energy/Day','City','Dist','Population'])
+
+for EVSE in allEVSEs:
+    
+    dfTemp = dfAll.loc[dfAll['EVSE ID'] == EVSE]
+    dfEnergyAll['TotEnergy'].at[EVSE] = np.sum(dfTemp['Energy (kWh)'])
+    dfEnergyAll['DaysOn'].at[EVSE] = (dfTemp.iloc[len(dfTemp)-1]['End Date'] - dfTemp.iloc[0]['Start Date']).days
+    dfEnergyAll['Energy/Day'].at[EVSE] = dfEnergyAll['TotEnergy'].at[EVSE] / dfEnergyAll['DaysOn'].at[EVSE]
+
+#%%   
+
+from geopy.distance import geodesic
+     
+minDist = np.zeros((len(allEVSEs),4));
+dfNearest = pd.DataFrame(np.zeros((len(allEVSEs),4)), columns=['EVSE','City','Population','Dist (mi)'])
+
+i = 0;
+distAll = np.zeros((len(dfCities),1))
+
+for EVSE in allEVSEs:
+    
+    dfTemp = dfAll.loc[dfAll['EVSE ID'] == EVSE] 
+    gpsEVSE = (dfTemp['Latitude'].iloc[0], dfTemp['Longitude'].iloc[0])
+    
+    for index, row in dfCities.iterrows():
+        print(index, row['City'])
+        gpsCity = (row['Lat'], row['Lng'])
+        distAll[index] = geodesic(gpsEVSE, gpsCity).miles;
+    
+    idx = np.argmin(distAll)
+    
+    dfNearest['EVSE'].loc[i] = EVSE   
+    dfNearest['City'].loc[i] = dfCities['City'].iloc[idx]
+    dfNearest['Population'].loc[i] = dfCities['2019 Population'].iloc[idx]
+    dfNearest['Dist (mi)'].loc[i] = np.min(distAll)
+    i += 1
+    
+    
 
 #%% Filter for Packsize
 
@@ -571,7 +614,6 @@ minDist = np.zeros((len(allEVSEs),4));
 dfNearest = pd.DataFrame(np.zeros((len(allEVSEs),4)), columns=['EVSE','City','Population','Dist (mi)'])
 
 i = 0;
-distPrev = 1E9;
 distAll = np.zeros((len(dfCities),1))
 
 for EVSE in allEVSEs:
