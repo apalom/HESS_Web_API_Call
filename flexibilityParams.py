@@ -66,12 +66,15 @@ dfAll = dfAll.sort_values(by=['Start Date']);
 dfAll = dfAll.reset_index(drop=True);
 
 allEVSEs = list(set(dfAll['EVSE ID']));
-allCities = list(set(dfCities['City']));
+
 
 #%% All EVSE Energy 
 
+from geopy.distance import geodesic
 
+i=0
 dfEnergyAll = pd.DataFrame(index=allEVSEs, columns=['TotEnergy','DaysOn','Energy/Day','City','Dist','Population'])
+distAll = np.zeros((len(dfCities),1))
 
 for EVSE in allEVSEs:
     
@@ -79,6 +82,19 @@ for EVSE in allEVSEs:
     dfEnergyAll['TotEnergy'].at[EVSE] = np.sum(dfTemp['Energy (kWh)'])
     dfEnergyAll['DaysOn'].at[EVSE] = (dfTemp.iloc[len(dfTemp)-1]['End Date'] - dfTemp.iloc[0]['Start Date']).days
     dfEnergyAll['Energy/Day'].at[EVSE] = dfEnergyAll['TotEnergy'].at[EVSE] / dfEnergyAll['DaysOn'].at[EVSE]
+
+    gpsEVSE = (dfTemp['Latitude'].iloc[0], dfTemp['Longitude'].iloc[0])
+    
+    for index, row in dfCities.iterrows():
+        gpsCity = (row['Lat'], row['Lng'])
+        distAll[index] = geodesic(gpsEVSE, gpsCity).miles;
+    
+    idx = np.argmin(distAll)
+    dfEnergyAll['City'].at[EVSE] = dfCities['City'].iloc[idx]
+    dfEnergyAll['Population'].at[EVSE] = dfCities['2019 Population'].iloc[idx]
+    dfEnergyAll['Dist'].at[EVSE] = np.min(distAll)
+    print(i, EVSE)
+    i+=1
 
 #%%   
 
@@ -102,14 +118,12 @@ for EVSE in allEVSEs:
     
     idx = np.argmin(distAll)
     
-    dfNearest['EVSE'].loc[i] = EVSE   
-    dfNearest['City'].loc[i] = dfCities['City'].iloc[idx]
-    dfNearest['Population'].loc[i] = dfCities['2019 Population'].iloc[idx]
-    dfNearest['Dist (mi)'].loc[i] = np.min(distAll)
+    #dfNearest['EVSE'].loc[i] = EVSE   
+    dfEnergyAll['City'].loc[i] = dfCities['City'].iloc[idx]
+    dfEnergyAll['Population'].loc[i] = dfCities['2019 Population'].iloc[idx]
+    dfEnergyAll['Dist (mi)'].loc[i] = np.min(distAll)
     i += 1
     
-    
-
 #%% Filter for Packsize
 
 dfPacksize = data[data['Station Name'].str.contains("PACKSIZE")]
@@ -127,10 +141,67 @@ dfPacksize['StartHr'] = dfPacksize['StartHr'].apply(lambda x: round(x * 4) / 4)
 dfPacksize['EndHr'] = dfPacksize['End Date'].apply(lambda x: x.hour + x.minute/60) 
 dfPacksize['EndHr'] = dfPacksize['EndHr'].apply(lambda x: round(x * 4) / 4) 
 dfPacksize['AvgPwr'] = dfPacksize['Energy (kWh)']/dfPacksize['Duration (h)']
+dfPacksize['Date'] = dfPacksize['Start Date'].apply(lambda x: str(x.month) + '-' + str(x.day) + '-' + str(x.year)) 
 
 dfPacksize = dfPacksize.loc[dfPacksize['Duration (h)'] > 0]
 dfPacksize = dfPacksize.sort_values(by=['Start Date']);
 dfPacksize = dfPacksize.reset_index(drop=True);
+
+totDays = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start Date'].iloc[0]).days
+
+#%% Random Variables (Per Hour)
+
+c = 0; 
+bW = 0.25;
+binHr = np.arange(0,24.0,bW);
+binCar = np.arange(0,10,1);
+binKWH = np.arange(0,30,2);
+binDur = np.arange(0,8,0.25);
+dates = list(set(dfPacksize['Date']));
+cnctdPerDay = np.zeros((len(binHr),totDays));
+energyPerDay = np.zeros((len(binHr),totDays));
+durationPerDay = np.zeros((len(binHr),totDays));
+rv_startHr = np.zeros((len(binHr),len(binCar)-1));
+rv_Energy = np.zeros((len(binHr),len(binKWH)-1));
+rv_Duration = np.zeros((len(binHr),len(binDur)-1));
+
+for d in dates:
+
+    dfTemp = dfPacksize.loc[dfPacksize['Date'] == d]
+    
+    r = 0;
+    
+    for hr in binHr:
+    
+        dfTemp1 = dfTemp.loc[dfTemp['StartHr'] == hr]
+        cnctd = len(dfTemp1)
+        print('        Hr:',r,cnctd)
+        cnctdPerDay[r,c] = cnctd;
+        energyPerDay[r,c] = np.sum(dfTemp1['Energy (kWh)'].values)
+        durationPerDay[r,c] = np.sum(dfTemp1['Duration (h)'].values)
+        
+        n_cnctd = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
+        n_energy = np.histogram(energyPerDay[r,:], bins=binKWH, density=True);
+        n_duration = np.histogram(durationPerDay[r,:], bins=binDur, density=True);
+        
+        rv_startHr[r,:] = n_cnctd[0];
+        rv_Energy[r,:] = 2*n_energy[0];
+        rv_Duration[r,:] = 0.25*n_duration[0];
+        
+        r += 1;   
+
+    print('Day:', c)
+    c += 1;
+    
+#%%
+
+binCar = np.arange(0,10,1);
+binHr = np.arange(0,24.0,bW);
+rv_startHr = np.zeros((len(binHr),len(binCar)-1));
+
+for r in range(len(cnctdPerDay)):
+    n = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
+    rv_startHr[r,:] = n[0];
 
 #%% Flexibility Parameters  
 
