@@ -62,3 +62,53 @@ dfAll = dfAll.sort_values(by=['Start Date']);
 dfAll = dfAll.reset_index(drop=True);
 
 dfHead = dfAll.head(100);
+
+#%% Calc Connected Time
+
+i=0;
+bW = 0.25;
+binEdges = np.arange(0,24.25,bW);
+#allEVSEs = list(set(dfAll['EVSE ID']));
+allEVSEs = [121987]
+
+for EVSE in allEVSEs:
+    
+    dfTemp = dfAll.loc[dfAll['EVSE ID'] == EVSE]  
+    dfTemp = dfTemp.sort_values(by=['Start Date']);   
+    
+    
+    
+    dfTemp1 = dfTemp.loc[dfTemp['Port Number'] == '1']            
+#        
+#    dfTemp2 = dfTemp.loc[dfTemp['Port Number'] == '2']
+#    dfTemp2 = dfTemp2.sort_values(by=['StartHr']);  
+    
+    daysAlive = (dfTemp1['Start Date'].iloc[len(dfTemp1)-1] - dfTemp1['Start Date'].iloc[0]).days
+    
+# --- Connected ---
+    p_connected = np.zeros((len(binEdges)-1,len(dfTemp1)));
+    #conn = np.arange(0);
+    for s in range(len(dfTemp1)-1):  
+        conn = np.zeros((len(binEdges)-1,1));
+        st = dfTemp.StartHr.iloc[s]
+        en = st + dfTemp['Duration (h)'].iloc[s]
+        stIdx = int(st/0.25);
+        enIdx = int(en/0.25);        
+        if en >= 23.75:
+            print('[--- MIDNIGHT ---]')
+            en1 = 23.75
+            enIdx1 = int(en1/0.25)
+            en2 = en - 23.75
+            enIdx2 = int(en2/0.25)
+            conn[stIdx:enIdx1] = 1; 
+            conn[0:enIdx2] = 1;
+        else:
+            conn[stIdx:enIdx] = 1; 
+
+        p_connected[:,i] = conn[:,0]
+    
+        i += 1;
+
+    noChargeDays = np.zeros((len(binEdges)-1,daysAlive));
+    
+    
