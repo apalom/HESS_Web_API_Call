@@ -153,10 +153,10 @@ totDays = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start 
 
 c = 0; 
 bW = 0.25;
-binHr = np.arange(0,24.0,bW);
+binHr = np.arange(0,24.0,1);
 binCar = np.arange(0,10,1);
-binKWH = np.arange(0,30,2);
-binDur = np.arange(0,8,0.25);
+binKWH = np.arange(0,40,2);
+binDur = np.arange(0,12,0.25);
 dates = list(set(dfPacksize['Date']));
 cnctdPerDay = np.zeros((len(binHr),totDays));
 energyPerDay = np.zeros((len(binHr),totDays));
@@ -192,6 +192,103 @@ for d in dates:
 
     print('Day:', c)
     c += 1;
+  
+#%% Calculate Markov Chain Transition Matrix
+
+def rank(c):
+    return c - 0
+
+nearest=0.25
+
+markovData = durationPerDay;
+markovData = np.around(markovData/nearest, decimals=0)*nearest
+#markovData = markovData.astype(int)
+states = int(np.max(markovData)/nearest)+1
+stateBins = np.arange(0,int(np.max(markovData))+nearest,nearest)
+if nearest >= 1:
+    M = [[0]*states for _ in range(states)]
+else:
+    states = int(np.ceil(states*nearest))
+    M = [[0]*states for _ in range(states)]
+    
+transitions = []
+
+for col in range(totDays):
+    dayTrans = markovData[:,col]
+    dayTrans = list(dayTrans)
+    
+    for item in dayTrans:
+        transitions.append((int(item)))
+        #transitions.append(str(int(item)))
+    #np.hstack((transitions,dayTrans))
+    
+T = [rank(c) for c in transitions]
+
+#create matrix of zeros
+M = [[0]*states for _ in range(states)]
+
+for (i,j) in zip(T,T[1:]):
+    M[i][j] += 1
+#    if nearest >= 0:
+#        M[int(i/nearest)][int(j/nearest)] += 1
+#    else:
+#        M[int(i*nearest)][int(j*nearest)] += 1
+
+#now convert to probabilities:
+for row in M:
+    n = sum(row)
+    print(n, row)
+    if n > 0:
+        row[:] = [f/sum(row) for f in row]
+        
+print('\n')
+
+#print M:
+for r in M:
+    print(r)
+
+trnsMtrx = np.asarray(M);
+
+print('\n','Possible States:', stateBins)
+    
+#%% Markov Reference
+    
+cnctdPerDay = cnctdPerDay.astype(int)
+
+
+dayTrans = cnctdPerDay[:,50]
+states = int(np.max(cnctdPerDay))+1
+dayTrans = list(dayTrans)
+#dayTrans = np.array2string(dayTrans, separator=',')
+transitions = []
+
+for item in dayTrans:
+    transitions.append(str(int(item)))
+
+def rank(c):
+    return ord(c) - ord('0')
+
+T = [rank(c) for c in transitions]
+
+#create matrix of zeros
+M = [[0]*states for _ in range(states)]
+
+for (i,j) in zip(T,T[1:]):
+    M[i][j] += 1
+
+#now convert to probabilities:
+for row in M:
+    n = sum(row)
+    print(n, row)
+    if n > 0:
+        row[:] = [f/sum(row) for f in row]
+        
+print('\n')
+
+#print M:
+for r in M:
+    print(r)
+
     
 #%%
 
