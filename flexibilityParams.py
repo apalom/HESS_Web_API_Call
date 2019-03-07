@@ -198,9 +198,9 @@ for d in dates:
 def rank(c):
     return c - 0
 
-nearest=0.25
+nearest=1
 
-markovData = durationPerDay;
+markovData = cnctdPerDay;
 markovData = np.around(markovData/nearest, decimals=0)*nearest
 #markovData = markovData.astype(int)
 states = int(np.max(markovData)/nearest)+1
@@ -250,55 +250,56 @@ for r in M:
 trnsMtrx = np.asarray(M);
 
 print('\n','Possible States:', stateBins)
-    
-#%% Markov Reference
-    
-cnctdPerDay = cnctdPerDay.astype(int)
+     
+#%% Plot EV Connected Profile
 
+binHr = np.arange(0,24,1)
+trials = 100
+profileRV = np.zeros((24,trials))
+profileMC = np.zeros((24,trials))
 
-dayTrans = cnctdPerDay[:,50]
-states = int(np.max(cnctdPerDay))+1
-dayTrans = list(dayTrans)
-#dayTrans = np.array2string(dayTrans, separator=',')
-transitions = []
-
-for item in dayTrans:
-    transitions.append(str(int(item)))
-
-def rank(c):
-    return ord(c) - ord('0')
-
-T = [rank(c) for c in transitions]
-
-#create matrix of zeros
-M = [[0]*states for _ in range(states)]
-
-for (i,j) in zip(T,T[1:]):
-    M[i][j] += 1
-
-#now convert to probabilities:
-for row in M:
-    n = sum(row)
-    print(n, row)
-    if n > 0:
-        row[:] = [f/sum(row) for f in row]
+for t in range(trials):
+    for hr in range(len(rv_startHr)):
+        rndEV_rv = np.random.choice(np.arange(len(rv_startHr[0][:])), p=rv_startHr[hr][:])
         
-print('\n')
+        rndEV_trns = np.random.choice(np.arange(len(trnsMtrx[0][:])), p=trnsMtrx[rndEV_rv][:])
+        print(hr, ' | ', rndEV_rv,  rndEV_trns)
+        profileRV[hr][t] = rndEV_rv
+        profileMC[hr][t] = rndEV_trns
+        
 
-#print M:
-for r in M:
-    print(r)
+for t in range(trials):
+    plt.scatter(binHr,profileRV[:,t], label='Random Variable Distribution')
+    plt.scatter(binHr,profileMC[:,t], label='Markov Chain Transition')
 
-    
-#%%
+#plt.legend(bbox_to_anchor=(1.005, -.10))
+plt.xticks(np.arange(0,26,2))
 
-binCar = np.arange(0,10,1);
-binHr = np.arange(0,24.0,bW);
-rv_startHr = np.zeros((len(binHr),len(binCar)-1));
+plt.show()
 
-for r in range(len(cnctdPerDay)):
-    n = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
-    rv_startHr[r,:] = n[0];
+#%% Density Scatter Plot
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
+
+yRV = profileRV[:,0]
+yMC = profileMC[:,0]
+x = binHr
+for t in range(trials-1):
+    x = np.hstack((x,binHr))
+    yRV = np.hstack((yRV,profileRV[:,t+1]))
+    yMC = np.hstack((yMC,profileMC[:,t+1]))
+
+# Calculate the point density
+y = yMC    
+xy = np.vstack([x,y])
+z = gaussian_kde(xy)(xy)
+
+fig, ax = plt.subplots()
+ax.scatter(x, y, s=z*1000, edgecolor='')
+#ax.scatter(x, y, c=z, s=50, edgecolor='')
+plt.show()
 
 #%% Flexibility Parameters  
 
