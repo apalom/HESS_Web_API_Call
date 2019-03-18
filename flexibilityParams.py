@@ -96,7 +96,7 @@ for EVSE in allEVSEs:
     print(i, EVSE)
     i+=1
 
-#%%   
+#%% Lat/Lon of All Utah Cities
 
 from geopy.distance import geodesic
      
@@ -168,6 +168,7 @@ rv_Duration = np.zeros((len(binHr),len(binDur)-1));
 for d in dates:
 
     dfTemp = dfPacksize.loc[dfPacksize['Date'] == d]
+    print('Day:', c)
     
     r = 0;
     
@@ -189,8 +190,6 @@ for d in dates:
         rv_Duration[r,:] = 0.25*n_duration[0];
         
         r += 1;   
-
-    print('Day:', c)
     c += 1;
   
 #%% Calculate Markov Chain Transition Matrix
@@ -200,7 +199,8 @@ def rank(c):
 
 nearest=1
 
-markovData = cnctdPerDay;
+#Choose: cnctdPerDay, energyPerDay & durationPerDay
+markovData = energyPerDay;
 markovData = np.around(markovData/nearest, decimals=0)*nearest
 #markovData = markovData.astype(int)
 states = int(np.max(markovData)/nearest)+1
@@ -253,19 +253,23 @@ print('\n','Possible States:', stateBins)
      
 #%% Plot EV Connected Profile
 
+rvSelect = rv_Energy
+trnsSelect = trnsMtrx
+
 binHr = np.arange(0,24,1)
 trials = 100
 profileRV = np.zeros((24,trials))
 profileMC = np.zeros((24,trials))
 
 for t in range(trials):
-    for hr in range(len(rv_startHr)):
-        rndEV_rv = np.random.choice(np.arange(len(rv_startHr[0][:])), p=rv_startHr[hr][:])
+    print('>> Trial: ',t,'\n')
+    for hr in range(len(rvSelect)):
+        rnd_rv = np.random.choice(np.arange(len(rvSelect[0][:])), p=rvSelect[hr][:])        
+        rnd_trns = np.random.choice(np.arange(len(trnsSelect[0][:])), p=trnsSelect[rnd_rv][:])
         
-        rndEV_trns = np.random.choice(np.arange(len(trnsMtrx[0][:])), p=trnsMtrx[rndEV_rv][:])
-        print(hr, ' | ', rndEV_rv,  rndEV_trns)
-        profileRV[hr][t] = rndEV_rv
-        profileMC[hr][t] = rndEV_trns
+        print(hr, ' | ', rnd_rv,  rnd_trns)
+        profileRV[hr][t] = rnd_rv
+        profileMC[hr][t] = rnd_trns
         
 
 for t in range(trials):
@@ -287,6 +291,7 @@ from scipy.stats import gaussian_kde
 yRV = profileRV[:,0]
 yMC = profileMC[:,0]
 x = binHr
+
 for t in range(trials-1):
     x = np.hstack((x,binHr))
     yRV = np.hstack((yRV,profileRV[:,t+1]))
@@ -303,7 +308,8 @@ plt.scatter(x, y, c=z, s=50, alpha=0.3, edgecolor='', cmap='viridis')
 #plt.scatter(x, y, c=z, cmap='viridis')
 
 plt.xlabel("Hour")
-plt.ylabel("EV Connected")
+plt.ylabel("Session Energy (kWh)")
+plt.title("Markov Chain")
 plt.xticks(np.arange(0,24,2))
 plt.colorbar()
 plt.show()
