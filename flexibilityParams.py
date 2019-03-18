@@ -281,6 +281,7 @@ plt.show()
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from scipy.stats import gaussian_kde
 
 yRV = profileRV[:,0]
@@ -296,9 +297,15 @@ y = yMC
 xy = np.vstack([x,y])
 z = gaussian_kde(xy)(xy)
 
-fig, ax = plt.subplots()
-ax.scatter(x, y, s=z*1000, edgecolor='')
-#ax.scatter(x, y, c=z, s=50, edgecolor='')
+#fig, ax = plt.subplots()
+#plt.scatter(x, y, s=z*1000, alpha=0.3, edgecolor='')
+plt.scatter(x, y, c=z, s=50, alpha=0.3, edgecolor='', cmap='viridis')
+#plt.scatter(x, y, c=z, cmap='viridis')
+
+plt.xlabel("Hour")
+plt.ylabel("EV Connected")
+plt.xticks(np.arange(0,24,2))
+plt.colorbar()
 plt.show()
 
 #%% Flexibility Parameters  
