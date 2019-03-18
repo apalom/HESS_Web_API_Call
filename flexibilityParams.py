@@ -154,17 +154,20 @@ totDays = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start 
 c = 0; 
 bW = 0.25;
 # Need to make sure that RV bins = MC bins
-binHr = np.arange(0,24.0,1);
+binHr = np.arange(0,24.0,1.0);
 binCar = np.arange(0,10,1);
 binKWH = np.arange(0,68,4);
-binDur = np.arange(0,12,0.25);
+binDur = np.arange(0.25,12.50,0.25);
+binSprw = np.arange(0.1,1.1,0.1);
 dates = list(set(dfPacksize['Date']));
 cnctdPerDay = np.zeros((len(binHr),totDays));
 energyPerDay = np.zeros((len(binHr),totDays));
 durationPerDay = np.zeros((len(binHr),totDays));
+sparrowPerDay = np.zeros((len(binHr),totDays));
 rv_startHr = np.zeros((len(binHr),len(binCar)-1));
 rv_Energy = np.zeros((len(binHr),len(binKWH)-1));
 rv_Duration = np.zeros((len(binHr),len(binDur)-1));
+rv_Sparrow = np.zeros((len(binHr),len(binSprw)-1));
 
 for d in dates:
 
@@ -181,14 +184,21 @@ for d in dates:
         cnctdPerDay[r,c] = cnctd;
         energyPerDay[r,c] = np.sum(dfTemp1['Energy (kWh)'].values)
         durationPerDay[r,c] = np.sum(dfTemp1['Duration (h)'].values)
-        
+#        sparrowPerDay[r,c] = np.sum(dfTemp1['Charging (h)'].values)/np.sum(dfTemp1['Duration (h)'].values)
+        if np.sum(dfTemp1['Duration (h)'].values) > 0.0:
+            sparrowPerDay[r,c] = np.sum(dfTemp1['Charging (h)'].values)/np.sum(dfTemp1['Duration (h)'].values)
+#        if len(dfTemp1) == 0:
+#            sparrowPerDay[r,c] = np.nan;
+#        
         n_cnctd = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
         n_energy = np.histogram(energyPerDay[r,:], bins=binKWH, density=True);
         n_duration = np.histogram(durationPerDay[r,:], bins=binDur, density=True);
+        n_sparrow = np.histogram(sparrowPerDay[r,:], bins=binSprw, density=True);
         
         rv_startHr[r,:] = n_cnctd[0];
         rv_Energy[r,:] = 4*n_energy[0];
         rv_Duration[r,:] = 0.25*n_duration[0];
+        rv_Sparrow[r,:] = 0.10*n_sparrow[0];
         
         r += 1;   
     c += 1;
@@ -198,18 +208,24 @@ for d in dates:
 def rank(c):
     return c - 0
 
-nearest=4;
+nearest=0.25;
 
 #Choose: cnctdPerDay, energyPerDay & durationPerDay
-markovData = energyPerDay;
+markovData = durationPerDay;
 markovData = np.around(markovData/nearest, decimals=0)*nearest
 #markovData = markovData.astype(int)
-states = int(np.max(markovData)/nearest)+1
-stateBins = np.arange(0,int(np.max(markovData))+nearest,nearest)
+#states = int(np.max(markovData)/nearest)+1
+#stateBins = np.arange(0,int(np.max(markovData))+nearest,nearest)
+
+# --- Need to synch Markov Chain bins with RV Bins --- #
+binSelect = binDur;
+states = int(binSelect[len(binSelect)-1]-nearest)
+stateBins = binSelect[:(len(binSelect)-1)]
+
 if nearest >= 1:
     M = [[0]*states for _ in range(states)]
 else:
-    states = int(np.ceil(states*nearest))
+    states = int(np.ceil(states/nearest))
     M = [[0]*states for _ in range(states)]
     
 transitions = []
@@ -229,9 +245,10 @@ T = [rank(c) for c in transitions]
 M = [[0]*states for _ in range(states)]
 
 for (i,j) in zip(T,T[1:]):
+    print(i,j)
     ii = int(i/nearest);
     jj = int(j/nearest);
-    M[ii][jj] += 1
+    M[i][j] += 1
 #    if nearest >= 0:
 #        M[int(i/nearest)][int(j/nearest)] += 1
 #    else:
@@ -257,7 +274,7 @@ trnsMtrx = np.asarray(M);
 
 print('\n','Possible States:', stateBins)
      
-#%% Plot EV Connected Profile
+#%% Plot Connected Profile
 
 rvSelect = rv_Energy
 trnsSelect = trnsMtrx
@@ -285,8 +302,8 @@ for t in range(trials):
 #plt.legend(bbox_to_anchor=(1.005, -.10))
 plt.xticks(np.arange(0,26,2))
 plt.legend(['Random Variable', 'Markov Chain'])
-plt.xlabel("Hour")
-plt.ylabel("Session Energy (kWh)")
+plt.xlabel("Hour of Day")
+plt.ylabel("Connected Duration (hr)")
 plt.show()
 
 #%% Density Scatter Plot
@@ -306,7 +323,7 @@ for t in range(trials-1):
     yMC = np.hstack((yMC,profileMC[:,t+1]))
 
 # Calculate the point density
-y = yRV   
+y = yMC   
 xy = np.vstack([x,y])
 z = gaussian_kde(xy)(xy)
 
@@ -316,8 +333,8 @@ plt.scatter(x, y, c=z, s=50, alpha=0.3, edgecolor='', cmap='viridis')
 #plt.scatter(x, y, c=z, cmap='viridis')
 
 plt.xlabel("Hour")
-plt.ylabel("Session Energy (kWh)")
-plt.title("Random Variable")
+plt.ylabel("Connected Duration (hr)")
+plt.title("Markov Chain")
 plt.xticks(np.arange(0,24,2))
 plt.colorbar()
 plt.show()
@@ -594,11 +611,12 @@ print(df_params)
 #%% Avg. Power Histogram
 plt.style.use('default')
 
-binEdges = np.arange(0,24,binWidth);
+#binEdges = np.arange(0,24,binWidth);
 
-plt.hist(dfPacksize['AvgPwr'], bins=binEdges, density=True, rwidth=1.0, color='#607c8e', edgecolor='white', linewidth=1.0);
-plt.title('Session Power Histogram')
-plt.xlabel('Power (kW)')
+plt.hist(dfPacksize['Duration (h)'], bins=binDur, density=True, rwidth=1.0, color='#607c8e', edgecolor='white', linewidth=1.0);
+#plt.hist(dfPacksize['Duration (h)'], bins=binDur, density=True)
+plt.title('Session Duration Histogram')
+plt.xlabel('Hours Connected')
 plt.ylabel('Frequency')
 
 plt.show()
