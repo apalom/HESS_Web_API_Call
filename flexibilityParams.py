@@ -153,9 +153,10 @@ totDays = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start 
 
 c = 0; 
 bW = 0.25;
+# Need to make sure that RV bins = MC bins
 binHr = np.arange(0,24.0,1);
 binCar = np.arange(0,10,1);
-binKWH = np.arange(0,40,2);
+binKWH = np.arange(0,68,4);
 binDur = np.arange(0,12,0.25);
 dates = list(set(dfPacksize['Date']));
 cnctdPerDay = np.zeros((len(binHr),totDays));
@@ -186,7 +187,7 @@ for d in dates:
         n_duration = np.histogram(durationPerDay[r,:], bins=binDur, density=True);
         
         rv_startHr[r,:] = n_cnctd[0];
-        rv_Energy[r,:] = 2*n_energy[0];
+        rv_Energy[r,:] = 4*n_energy[0];
         rv_Duration[r,:] = 0.25*n_duration[0];
         
         r += 1;   
@@ -197,7 +198,7 @@ for d in dates:
 def rank(c):
     return c - 0
 
-nearest=1
+nearest=4;
 
 #Choose: cnctdPerDay, energyPerDay & durationPerDay
 markovData = energyPerDay;
@@ -228,7 +229,9 @@ T = [rank(c) for c in transitions]
 M = [[0]*states for _ in range(states)]
 
 for (i,j) in zip(T,T[1:]):
-    M[i][j] += 1
+    ii = int(i/nearest);
+    jj = int(j/nearest);
+    M[ii][jj] += 1
 #    if nearest >= 0:
 #        M[int(i/nearest)][int(j/nearest)] += 1
 #    else:
@@ -245,7 +248,10 @@ print('\n')
 
 #print M:
 for r in M:
+    if np.sum(r) == 0:
+        r[0] = 1;
     print(r)
+    
 
 trnsMtrx = np.asarray(M);
 
@@ -257,7 +263,7 @@ rvSelect = rv_Energy
 trnsSelect = trnsMtrx
 
 binHr = np.arange(0,24,1)
-trials = 100
+trials = 500
 profileRV = np.zeros((24,trials))
 profileMC = np.zeros((24,trials))
 
@@ -267,18 +273,20 @@ for t in range(trials):
         rnd_rv = np.random.choice(np.arange(len(rvSelect[0][:])), p=rvSelect[hr][:])        
         rnd_trns = np.random.choice(np.arange(len(trnsSelect[0][:])), p=trnsSelect[rnd_rv][:])
         
-        print(hr, ' | ', rnd_rv,  rnd_trns)
-        profileRV[hr][t] = rnd_rv
-        profileMC[hr][t] = rnd_trns
+        profileRV[hr][t] = nearest*rnd_rv
+        profileMC[hr][t] = nearest*rnd_trns
+        print(hr, ' | ', profileRV[hr][t], profileMC[hr][t])
         
-
+#%%
 for t in range(trials):
-    plt.scatter(binHr,profileRV[:,t], label='Random Variable Distribution')
-    plt.scatter(binHr,profileMC[:,t], label='Markov Chain Transition')
+    plt.scatter(binHr,profileRV[:,t], marker='D', s=30, color='steelblue', facecolors='none', alpha=0.3, label='Random Variable Distribution')
+    plt.scatter(binHr,profileMC[:,t], color='grey', facecolors='none', alpha=0.3, label='Markov Chain Transition')
 
 #plt.legend(bbox_to_anchor=(1.005, -.10))
 plt.xticks(np.arange(0,26,2))
-
+plt.legend(['Random Variable', 'Markov Chain'])
+plt.xlabel("Hour")
+plt.ylabel("Session Energy (kWh)")
 plt.show()
 
 #%% Density Scatter Plot
@@ -298,7 +306,7 @@ for t in range(trials-1):
     yMC = np.hstack((yMC,profileMC[:,t+1]))
 
 # Calculate the point density
-y = yMC    
+y = yRV   
 xy = np.vstack([x,y])
 z = gaussian_kde(xy)(xy)
 
@@ -309,7 +317,7 @@ plt.scatter(x, y, c=z, s=50, alpha=0.3, edgecolor='', cmap='viridis')
 
 plt.xlabel("Hour")
 plt.ylabel("Session Energy (kWh)")
-plt.title("Markov Chain")
+plt.title("Random Variable")
 plt.xticks(np.arange(0,24,2))
 plt.colorbar()
 plt.show()
