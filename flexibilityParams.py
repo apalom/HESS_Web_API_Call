@@ -158,7 +158,7 @@ binHr = np.arange(0,24.0,1.0);
 binCar = np.arange(0,10,1);
 binKWH = np.arange(0,68,4);
 binDur = np.arange(0.25,12.50,0.25);
-binSprw = np.arange(0.1,1.1,0.1);
+binSprw = np.arange(0.1,1.2,0.1);
 dates = list(set(dfPacksize['Date']));
 cnctdPerDay = np.zeros((len(binHr),totDays));
 energyPerDay = np.zeros((len(binHr),totDays));
@@ -208,25 +208,26 @@ for d in dates:
 def rank(c):
     return c - 0
 
-nearest=0.25;
+nearest=0.1;
 
 #Choose: cnctdPerDay, energyPerDay & durationPerDay
-markovData = durationPerDay;
+markovData = sparrowPerDay;
 markovData = np.around(markovData/nearest, decimals=0)*nearest
 #markovData = markovData.astype(int)
 #states = int(np.max(markovData)/nearest)+1
 #stateBins = np.arange(0,int(np.max(markovData))+nearest,nearest)
 
 # --- Need to synch Markov Chain bins with RV Bins --- #
-binSelect = binDur;
-states = int(binSelect[len(binSelect)-1]-nearest)
+binSelect = binSprw;
+states = int(binSelect[len(binSelect)-1]/nearest-nearest)
 stateBins = binSelect[:(len(binSelect)-1)]
+#states = len(binSelect)-1
 
-if nearest >= 1:
-    M = [[0]*states for _ in range(states)]
-else:
-    states = int(np.ceil(states/nearest))
-    M = [[0]*states for _ in range(states)]
+#if nearest >= 1:
+#    M = [[0]*states for _ in range(states)]
+#else:
+#    states = int(np.ceil(states/nearest))
+#    M = [[0]*states for _ in range(states)]
     
 transitions = []
 
@@ -235,7 +236,8 @@ for col in range(totDays):
     dayTrans = list(dayTrans)
     
     for item in dayTrans:
-        transitions.append((int(item)))
+        #transitions.append((int(item)))
+        transitions.append(((item)))
         #transitions.append(str(int(item)))
     #np.hstack((transitions,dayTrans))
     
@@ -246,9 +248,10 @@ M = [[0]*states for _ in range(states)]
 
 for (i,j) in zip(T,T[1:]):
     print(i,j)
-    ii = int(i/nearest);
-    jj = int(j/nearest);
-    M[i][j] += 1
+    
+    ii = int(i/nearest)-1;
+    jj = int(j/nearest)-1;
+    M[ii][jj] += 1
 #    if nearest >= 0:
 #        M[int(i/nearest)][int(j/nearest)] += 1
 #    else:
