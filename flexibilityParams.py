@@ -134,8 +134,10 @@ dfPacksize['Duration (h)'] = dfPacksize['Duration (h)'].apply(lambda x: round(x 
 dfPacksize['Charging (h)'] = dfPacksize['Charging Time (hh:mm:ss)'].apply(lambda x: x.seconds/3600)
 dfPacksize['Charging (h)'] = dfPacksize['Charging (h)'].apply(lambda x: round(x * 2) / 4) 
 
+# Day of year 0 = Jan1 and day of year 365 = Dec31
 dfPacksize['DayofYr'] = dfPacksize['Start Date'].apply(lambda x: x.dayofyear) 
 dfPacksize['DayofWk'] = dfPacksize['Start Date'].apply(lambda x: x.weekday()) 
+dfPacksize['Year'] = dfPacksize['Start Date'].apply(lambda x: x.year) 
 dfPacksize['StartHr'] = dfPacksize['Start Date'].apply(lambda x: x.hour + x.minute/60) 
 dfPacksize['StartHr'] = dfPacksize['StartHr'].apply(lambda x: round(x * 4) / 4) 
 dfPacksize['EndHr'] = dfPacksize['End Date'].apply(lambda x: x.hour + x.minute/60) 
@@ -147,7 +149,90 @@ dfPacksize = dfPacksize.loc[dfPacksize['Duration (h)'] > 0]
 dfPacksize = dfPacksize.sort_values(by=['Start Date']);
 dfPacksize = dfPacksize.reset_index(drop=True);
 
-totDays = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start Date'].iloc[0]).days
+evse_ID = list(set(dfPacksize['EVSE ID']))
+evsePacksize = {}
+
+for id in evse_ID:
+    dfTemp = dfPacksize.loc[dfPacksize['EVSE ID'] == id]
+    name = dfTemp['Station Name'].iloc[0]
+    evsePacksize[id] = name
+
+#%% Calculate Zero Days
+    
+dfPack2017 = dfPacksize.loc[dfPacksize['Year'] == 2017]
+dfPack2018 = dfPacksize.loc[dfPacksize['Year'] == 2018]
+
+min2017 = np.min(dfPack2017['DayofYr'])
+max2018 = np.max(dfPack2018['DayofYr'])
+days2017 = np.arange(min2017, 365+1, 1)
+days2018 = np.arange(1, max2018+1, 1)
+
+for d in days2017:
+    dfTemp = dfPack2017.loc[dfPack2017['Date'] == d];
+    if len(dfTemp) == 0:
+        addRow = pd.DataFrame(np.zeros((1,len(dfPack2017.columns))), columns=dfPack2017.columns)
+        addRow['DayofYr'] = d;
+        addRow['Year'] = 2017;
+        addRow['Start Date'] = compose_date(addRow['Year'], days=addRow['DayofYr'])[0]
+        dfPack2017 = dfPack2017.append(addRow)
+
+for d in days2018:
+    dfTemp = dfPack2018.loc[dfPack2018['Date'] == d];
+    if len(dfTemp) == 0:
+        addRow = pd.DataFrame(np.zeros((1,len(dfPack2018.columns))), columns=dfPack2018.columns)
+        addRow['DayofYr'] = d;
+        addRow['Year'] = 2018;
+        addRow['Start Date'] = compose_date(addRow['Year'], days=addRow['DayofYr'])[0]
+        dfPack2018 = dfPack2018.append(addRow)
+
+dfPacksize1 = dfPack2017.append(dfPack2018);
+dfPacksize1 = dfPacksize1.sort_values(by=['Start Date']);
+
+#%% Compose Date
+        #https://stackoverflow.com/questions/34258892/converting-year-and-day-of-year-into-datetime-index-in-pandas/40089561
+        
+def compose_date(years, months=1, days=1, weeks=None, hours=None, minutes=None,
+                 seconds=None, milliseconds=None, microseconds=None, nanoseconds=None):
+    years = np.asarray(years) - 1970
+    months = np.asarray(months) - 1
+    days = np.asarray(days) - 1
+    types = ('<M8[Y]', '<m8[M]', '<m8[D]', '<m8[W]', '<m8[h]',
+             '<m8[m]', '<m8[s]', '<m8[ms]', '<m8[us]', '<m8[ns]')
+    vals = (years, months, days, weeks, hours, minutes, seconds,
+            milliseconds, microseconds, nanoseconds)
+    return sum(np.asarray(v, dtype=t) for t, v in zip(types, vals)
+               if v is not None)
+
+#dfPack2017['Date'] = compose_date(dfPack2017['Year'], days=dfPack2017['DayofYr'])
+
+#%%
+
+daysOn_2017 = list(set(dfPack2017['DayofYr']))
+daysOn_2018 = list(set(dfPack2018['DayofYr']))
+
+for d in range(len(daysOn_2017)-1):
+    day1 = daysOn_2017[d+1]
+    day0 = daysOn_2017[d]
+    dayDelta = day1 - day0
+    if dayDelta > 1:
+        dd = 0
+        for dd in range(dayDelta-1):
+            daysOn_2017.append(day0 + 1 + dd)
+
+for d in range(len(daysOn_2018)-1):
+    day1 = daysOn_2018[d+1]
+    day0 = daysOn_2018[d]
+    dayDelta = day1 - day0
+    if dayDelta > 1:
+        dd = 0
+        for dd in range(dayDelta-1):
+            daysOn_2018.append(day0 + 1 + dd)
+
+
+
+daysOn = list(set(dfPacksize['Date']))
+daysUnique = len(daysOn)
+daysTot = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start Date'].iloc[0]).days
 
 #%% Random Variables (Per Hour)
 
@@ -160,10 +245,10 @@ binKWH = np.arange(0,68,4);
 binDur = np.arange(0.25,12.50,0.25);
 binSprw = np.arange(0.1,1.2,0.1);
 dates = list(set(dfPacksize['Date']));
-cnctdPerDay = np.zeros((len(binHr),totDays));
-energyPerDay = np.zeros((len(binHr),totDays));
-durationPerDay = np.zeros((len(binHr),totDays));
-sparrowPerDay = np.zeros((len(binHr),totDays));
+cnctdPerDay = np.zeros((len(binHr),daysTot));
+energyPerDay = np.zeros((len(binHr),daysTot));
+durationPerDay = np.zeros((len(binHr),daysTot));
+sparrowPerDay = np.zeros((len(binHr),daysTot));
 rv_startHr = np.zeros((len(binHr),len(binCar)-1));
 rv_Energy = np.zeros((len(binHr),len(binKWH)-1));
 rv_Duration = np.zeros((len(binHr),len(binDur)-1));
