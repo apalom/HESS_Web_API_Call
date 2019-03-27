@@ -168,25 +168,30 @@ days2017 = np.arange(min2017, 365+1, 1)
 days2018 = np.arange(1, max2018+1, 1)
 
 for d in days2017:
-    dfTemp = dfPack2017.loc[dfPack2017['Date'] == d];
+    dfTemp = dfPack2017.loc[dfPack2017['DayofYr'] == d];
     if len(dfTemp) == 0:
         addRow = pd.DataFrame(np.zeros((1,len(dfPack2017.columns))), columns=dfPack2017.columns)
         addRow['DayofYr'] = d;
         addRow['Year'] = 2017;
         addRow['Start Date'] = compose_date(addRow['Year'], days=addRow['DayofYr'])[0]
         dfPack2017 = dfPack2017.append(addRow)
+    else:
+        x = 0;
 
 for d in days2018:
-    dfTemp = dfPack2018.loc[dfPack2018['Date'] == d];
+    dfTemp = dfPack2018.loc[dfPack2018['DayofYr'] == d];
     if len(dfTemp) == 0:
         addRow = pd.DataFrame(np.zeros((1,len(dfPack2018.columns))), columns=dfPack2018.columns)
         addRow['DayofYr'] = d;
         addRow['Year'] = 2018;
         addRow['Start Date'] = compose_date(addRow['Year'], days=addRow['DayofYr'])[0]
         dfPack2018 = dfPack2018.append(addRow)
+    else:
+        x = 0;
 
 dfPacksize1 = dfPack2017.append(dfPack2018);
 dfPacksize1 = dfPacksize1.sort_values(by=['Start Date']);
+dfPacksize1['DayofWk'] = dfPacksize1['Start Date'].apply(lambda x: x.weekday()) 
 
 #%% Compose Date
         #https://stackoverflow.com/questions/34258892/converting-year-and-day-of-year-into-datetime-index-in-pandas/40089561
