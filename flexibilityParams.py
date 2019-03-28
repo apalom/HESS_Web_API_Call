@@ -245,7 +245,7 @@ dfPacksize1 = dfPacksize1.reset_index(drop=True);
 binDays = np.arange(0,8,1)
 dfPackSizeZeros = dfPacksize1.loc[dfPacksize1['EVSE ID'] == 0]
 daysZero = np.histogram(dfPackSizeZeros['DayofWk'], bins=binDays, density=True);
-daysTot = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start Date'].iloc[0]).days
+daysTot = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start Date'].iloc[0]).days+1
 
 #%% Zero Day Distributions
 plt.style.use('default')
@@ -293,7 +293,7 @@ for daySlct in range(len(daysOfWeek)):
     for d in dates:
     
         dfTemp = dfPacksizeDay.loc[dfPacksizeDay['Date'] == d]
-        print('Day:', c)
+        print('\n Day:', c)
         
         r = 0;
         
@@ -310,7 +310,7 @@ for daySlct in range(len(daysOfWeek)):
                 sparrowPerDay[r,c] = np.sum(dfTemp1['Charging (h)'].values)/np.sum(dfTemp1['Duration (h)'].values)
     #        if len(dfTemp1) == 0:
     #            sparrowPerDay[r,c] = np.nan;
-    #        
+            
             n_cnctd = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
             n_energy = np.histogram(energyPerDay[r,:], bins=binKWH, density=True);
             n_duration = np.histogram(durationPerDay[r,:], bins=binDur, density=True);
