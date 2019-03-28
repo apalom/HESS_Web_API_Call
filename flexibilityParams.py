@@ -136,6 +136,7 @@ dfPacksize['Charging (h)'] = dfPacksize['Charging (h)'].apply(lambda x: round(x 
 
 # Day of year 0 = Jan1 and day of year 365 = Dec31
 dfPacksize['DayofYr'] = dfPacksize['Start Date'].apply(lambda x: x.dayofyear) 
+# Monday is 0 and Sunday is 6
 dfPacksize['DayofWk'] = dfPacksize['Start Date'].apply(lambda x: x.weekday()) 
 dfPacksize['Year'] = dfPacksize['Start Date'].apply(lambda x: x.year) 
 dfPacksize['StartHr'] = dfPacksize['Start Date'].apply(lambda x: x.hour + x.minute/60) 
@@ -241,63 +242,113 @@ dfPacksize1['DayofWk'] = dfPacksize1['Start Date'].apply(lambda x: x.weekday())
 dfPacksize1['Date'] = dfPacksize1['Start Date'].apply(lambda x: str(x.month) + '-' + str(x.day) + '-' + str(x.year)) 
 dfPacksize1 = dfPacksize1.reset_index(drop=True);
 
-daysZero = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
+binDays = np.arange(0,8,1)
+dfPackSizeZeros = dfPacksize1.loc[dfPacksize1['EVSE ID'] == 0]
+daysZero = np.histogram(dfPackSizeZeros['DayofWk'], bins=binDays, density=True);
+daysTot = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start Date'].iloc[0]).days
 
+#%% Zero Day Distributions
+plt.style.use('default')
+
+plt.bar(range(len(daysZero[0])), daysZero[0], align='center')
+#Monday is 0 and Sunday is 6
+plt.title('Zero Charge Sessions Days')
+plt.xticks(range(7), ['M','T','W','Th','F','Sa','Su'], size='small')
+plt.xlabel('Days')
+plt.ylabel('Probability')
+plt.show()
 
 #%% Random Variables (Per Hour)
+
+rv_Dict = {0: 0,'1-Tues': 0,'2-Wed': 0,'3-Thurs': 0,'4-Fri': 0,'5-Sat': 0,'6-Sun': 0}
+
+#Monday is 0 and Sunday is 6
+daysOfWeek = ['Mon','Tues','Wed','Thurs','Fri','Sat','Sun']
 
 c = 0; 
 bW = 0.25;
 # Need to make sure that RV bins = MC bins
-binHr = np.arange(0,24.0,1.0);
+binHr = np.arange(0,24.0,0.25);
 binCar = np.arange(0,10,1);
 binKWH = np.arange(0,68,4);
 binDur = np.arange(0.25,12.50,0.25);
 binSprw = np.arange(0.1,1.2,0.1);
-dates = list(set(dfPacksize['Date']));
-cnctdPerDay = np.zeros((len(binHr),daysTot));
-energyPerDay = np.zeros((len(binHr),daysTot));
-durationPerDay = np.zeros((len(binHr),daysTot));
-sparrowPerDay = np.zeros((len(binHr),daysTot));
-rv_startHr = np.zeros((len(binHr),len(binCar)-1));
-rv_Energy = np.zeros((len(binHr),len(binKWH)-1));
-rv_Duration = np.zeros((len(binHr),len(binDur)-1));
-rv_Sparrow = np.zeros((len(binHr),len(binSprw)-1));
+dates = list(set(dfPacksize1['Date']));
 
-for d in dates:
+for daySlct in range(len(daysOfWeek)):
+    
+    dfPacksizeDay = dfPacksize1.loc[dfPacksize1['DayofWk'] == daySlct]
+    
+    cnctdPerDay = np.zeros((len(binHr),daysTot));
+    energyPerDay = np.zeros((len(binHr),daysTot));
+    durationPerDay = np.zeros((len(binHr),daysTot));
+    sparrowPerDay = np.zeros((len(binHr),daysTot));
+    rv_Connected = np.zeros((len(binHr),len(binCar)-1));
+    rv_Energy = np.zeros((len(binHr),len(binKWH)-1));
+    rv_Duration = np.zeros((len(binHr),len(binDur)-1));
+    rv_Sparrow = np.zeros((len(binHr),len(binSprw)-1));
+    
+    c = 0;
+    
+    for d in dates:
+    
+        dfTemp = dfPacksizeDay.loc[dfPacksizeDay['Date'] == d]
+        print('Day:', c)
+        
+        r = 0;
+        
+        for hr in binHr:
+        
+            dfTemp1 = dfTemp.loc[dfTemp['StartHr'] == hr]
+            cnctd = len(dfTemp1)
+    #        print('        Hr:',r,cnctd)
+            cnctdPerDay[r,c] = cnctd;
+            energyPerDay[r,c] = np.sum(dfTemp1['Energy (kWh)'].values)
+            durationPerDay[r,c] = np.sum(dfTemp1['Duration (h)'].values)
+    #        sparrowPerDay[r,c] = np.sum(dfTemp1['Charging (h)'].values)/np.sum(dfTemp1['Duration (h)'].values)
+            if np.sum(dfTemp1['Duration (h)'].values) > 0.0:
+                sparrowPerDay[r,c] = np.sum(dfTemp1['Charging (h)'].values)/np.sum(dfTemp1['Duration (h)'].values)
+    #        if len(dfTemp1) == 0:
+    #            sparrowPerDay[r,c] = np.nan;
+    #        
+            n_cnctd = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
+            n_energy = np.histogram(energyPerDay[r,:], bins=binKWH, density=True);
+            n_duration = np.histogram(durationPerDay[r,:], bins=binDur, density=True);
+            n_sparrow = np.histogram(sparrowPerDay[r,:], bins=binSprw, density=True);
+            
+            rv_Connected[r,:] = n_cnctd[0];
+            rv_Energy[r,:] = 4*n_energy[0];
+            rv_Duration[r,:] = 0.25*n_duration[0];
+            rv_Sparrow[r,:] = 0.10*n_sparrow[0];
+            
+            r += 1;   
+        c += 1;
+    
+    dicts = {'rv_Connected': rv_Connected, 'rv_Energy': rv_Energy, 'rv_Duration': rv_Duration, 'rv_Sparrow': rv_Sparrow }
+    rv_Dict[daySlct] = dicts
 
-    dfTemp = dfPacksize.loc[dfPacksize['Date'] == d]
-    print('Day:', c)
+#%%
     
-    r = 0;
+import csv
     
-    for hr in binHr:
-    
-        dfTemp1 = dfTemp.loc[dfTemp['StartHr'] == hr]
-        cnctd = len(dfTemp1)
-        print('        Hr:',r,cnctd)
-        cnctdPerDay[r,c] = cnctd;
-        energyPerDay[r,c] = np.sum(dfTemp1['Energy (kWh)'].values)
-        durationPerDay[r,c] = np.sum(dfTemp1['Duration (h)'].values)
-#        sparrowPerDay[r,c] = np.sum(dfTemp1['Charging (h)'].values)/np.sum(dfTemp1['Duration (h)'].values)
-        if np.sum(dfTemp1['Duration (h)'].values) > 0.0:
-            sparrowPerDay[r,c] = np.sum(dfTemp1['Charging (h)'].values)/np.sum(dfTemp1['Duration (h)'].values)
-#        if len(dfTemp1) == 0:
-#            sparrowPerDay[r,c] = np.nan;
-#        
-        n_cnctd = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
-        n_energy = np.histogram(energyPerDay[r,:], bins=binKWH, density=True);
-        n_duration = np.histogram(durationPerDay[r,:], bins=binDur, density=True);
-        n_sparrow = np.histogram(sparrowPerDay[r,:], bins=binSprw, density=True);
-        
-        rv_startHr[r,:] = n_cnctd[0];
-        rv_Energy[r,:] = 4*n_energy[0];
-        rv_Duration[r,:] = 0.25*n_duration[0];
-        rv_Sparrow[r,:] = 0.10*n_sparrow[0];
-        
-        r += 1;   
-    c += 1;
-  
+fileName = 'exports\\PackSize-Flexibility\\rv_' + str(daySlct) + '-' + str(daysOfWeek[daySlct]) +'.csv'
+#outputFile = open(fileName, 'w')  
+#with open(fileName, 'w') as outputFile:  
+#   writer = csv.writer(outputFile)
+#   writer.writerows(outPxfmr)   
+   
+# Create a Pandas Excel writer using XlsxWriter as the engine.
+writer = pd.ExcelWriter('pandas_multiple.xlsx', engine='xlsxwriter')
+
+# Write each dataframe to a different worksheet.
+rv_Connected.to_excel(writer, sheet_name='rv_Connected')
+rv_Energy.to_excel(writer, sheet_name='rv_Energy')
+rv_Duration.to_excel(writer, sheet_name='rv_Duration')
+rv_Sparrow.to_excel(writer, sheet_name='rv_Sparrow')
+
+# Close the Pandas Excel writer and output the Excel file.
+writer.save()
+
 #%% Calculate Markov Chain Transition Matrix
 
 def rank(c):
