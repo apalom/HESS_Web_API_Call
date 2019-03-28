@@ -157,6 +157,52 @@ for id in evse_ID:
     name = dfTemp['Station Name'].iloc[0]
     evsePacksize[id] = name
 
+
+#%% Compose Date
+        #https://stackoverflow.com/questions/34258892/converting-year-and-day-of-year-into-datetime-index-in-pandas/40089561
+        
+def compose_date(years, months=1, days=1, weeks=None, hours=None, minutes=None,
+                 seconds=None, milliseconds=None, microseconds=None, nanoseconds=None):
+    years = np.asarray(years) - 1970
+    months = np.asarray(months) - 1
+    days = np.asarray(days) - 1
+    types = ('<M8[Y]', '<m8[M]', '<m8[D]', '<m8[W]', '<m8[h]',
+             '<m8[m]', '<m8[s]', '<m8[ms]', '<m8[us]', '<m8[ns]')
+    vals = (years, months, days, weeks, hours, minutes, seconds,
+            milliseconds, microseconds, nanoseconds)
+    return sum(np.asarray(v, dtype=t) for t, v in zip(types, vals)
+               if v is not None)
+
+#dfPack2017['Date'] = compose_date(dfPack2017['Year'], days=dfPack2017['DayofYr'])
+
+#%% Calculate Total Days in 2017 & 2018
+
+daysOn_2017 = list(set(dfPack2017['DayofYr']))
+daysOn_2018 = list(set(dfPack2018['DayofYr']))
+
+for d in range(len(daysOn_2017)-1):
+    day1 = daysOn_2017[d+1]
+    day0 = daysOn_2017[d]
+    dayDelta = day1 - day0
+    if dayDelta > 1:
+        dd = 0
+        for dd in range(dayDelta-1):
+            daysOn_2017.append(day0 + 1 + dd)
+
+for d in range(len(daysOn_2018)-1):
+    day1 = daysOn_2018[d+1]
+    day0 = daysOn_2018[d]
+    dayDelta = day1 - day0
+    if dayDelta > 1:
+        dd = 0
+        for dd in range(dayDelta-1):
+            daysOn_2018.append(day0 + 1 + dd)
+
+
+daysOn = list(set(dfPacksize['Date']))
+daysUnique = len(daysOn)
+daysTot = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start Date'].iloc[0]).days
+
 #%% Calculate Zero Days
     
 dfPack2017 = dfPacksize.loc[dfPacksize['Year'] == 2017]
@@ -192,52 +238,11 @@ for d in days2018:
 dfPacksize1 = dfPack2017.append(dfPack2018);
 dfPacksize1 = dfPacksize1.sort_values(by=['Start Date']);
 dfPacksize1['DayofWk'] = dfPacksize1['Start Date'].apply(lambda x: x.weekday()) 
+dfPacksize1['Date'] = dfPacksize1['Start Date'].apply(lambda x: str(x.month) + '-' + str(x.day) + '-' + str(x.year)) 
+dfPacksize1 = dfPacksize1.reset_index(drop=True);
 
-#%% Compose Date
-        #https://stackoverflow.com/questions/34258892/converting-year-and-day-of-year-into-datetime-index-in-pandas/40089561
-        
-def compose_date(years, months=1, days=1, weeks=None, hours=None, minutes=None,
-                 seconds=None, milliseconds=None, microseconds=None, nanoseconds=None):
-    years = np.asarray(years) - 1970
-    months = np.asarray(months) - 1
-    days = np.asarray(days) - 1
-    types = ('<M8[Y]', '<m8[M]', '<m8[D]', '<m8[W]', '<m8[h]',
-             '<m8[m]', '<m8[s]', '<m8[ms]', '<m8[us]', '<m8[ns]')
-    vals = (years, months, days, weeks, hours, minutes, seconds,
-            milliseconds, microseconds, nanoseconds)
-    return sum(np.asarray(v, dtype=t) for t, v in zip(types, vals)
-               if v is not None)
+daysZero = np.histogram(cnctdPerDay[r,:], bins=binCar, density=True);
 
-#dfPack2017['Date'] = compose_date(dfPack2017['Year'], days=dfPack2017['DayofYr'])
-
-#%%
-
-daysOn_2017 = list(set(dfPack2017['DayofYr']))
-daysOn_2018 = list(set(dfPack2018['DayofYr']))
-
-for d in range(len(daysOn_2017)-1):
-    day1 = daysOn_2017[d+1]
-    day0 = daysOn_2017[d]
-    dayDelta = day1 - day0
-    if dayDelta > 1:
-        dd = 0
-        for dd in range(dayDelta-1):
-            daysOn_2017.append(day0 + 1 + dd)
-
-for d in range(len(daysOn_2018)-1):
-    day1 = daysOn_2018[d+1]
-    day0 = daysOn_2018[d]
-    dayDelta = day1 - day0
-    if dayDelta > 1:
-        dd = 0
-        for dd in range(dayDelta-1):
-            daysOn_2018.append(day0 + 1 + dd)
-
-
-
-daysOn = list(set(dfPacksize['Date']))
-daysUnique = len(daysOn)
-daysTot = (dfPacksize['Start Date'].iloc[len(dfPacksize)-1] - dfPacksize['Start Date'].iloc[0]).days
 
 #%% Random Variables (Per Hour)
 
