@@ -327,26 +327,37 @@ for daySlct in range(len(daysOfWeek)):
     dicts = {'rv_Connected': rv_Connected, 'rv_Energy': rv_Energy, 'rv_Duration': rv_Duration, 'rv_Sparrow': rv_Sparrow }
     rv_Dict[daySlct] = dicts
 
-#%% Output Random Variable
+#%% Output Random Variable and Calculate Covariance
 
-import xlsxwriter
+# What does covariance give us? https://docs.scipy.org/doc/numpy/reference/generated/numpy.cov.html
+    # Covariance indicates the level to which two variables vary together.
+    # The covariance matrix element C_{ij} is the covariance of x_i and x_j. The element C_{ii} is the variance of x_i.
+    # Covariance Matrix takes random variables (in rows) and observations (in columns) and calculates the covariance
+    # between (i,j) pairs of random variable reailizations.
 
 for d in range(7):
 
     fileName = 'exports\\PackSize-Flexibility\\' + str(d) + '-RandomVariable.xlsx'
             
     writer = pd.ExcelWriter(fileName, engine='xlsxwriter')
-   
-    
+       
     pd_C = pd.DataFrame(rv_Dict[d]['rv_Connected'])
+    pd_C_cov = pd.DataFrame(np.cov(rv_Dict[d]['rv_Connected']))
     pd_D = pd.DataFrame(rv_Dict[d]['rv_Duration'])
+    pd_D_cov = pd.DataFrame(np.cov(rv_Dict[d]['rv_Duration']))
     pd_E = pd.DataFrame(rv_Dict[d]['rv_Energy'])
+    pd_E_cov = pd.DataFrame(np.cov(rv_Dict[d]['rv_Energy']))
     pd_S = pd.DataFrame(rv_Dict[d]['rv_Sparrow'])
+    pd_S_cov = pd.DataFrame(np.cov(rv_Dict[d]['rv_Sparrow']))
     
     pd_C.to_excel(writer, sheet_name='rv_Connected')
+    pd_C_cov.to_excel(writer, sheet_name='cov_Connected')
     pd_D.to_excel(writer, sheet_name='rv_Duration')
+    pd_D_cov.to_excel(writer, sheet_name='cov_Duration')
     pd_E.to_excel(writer, sheet_name='rv_Energy')
+    pd_E_cov.to_excel(writer, sheet_name='cov_Energy')
     pd_S.to_excel(writer, sheet_name='rv_Sparrow')
+    pd_S_cov.to_excel(writer, sheet_name='cov_Sparrow')
 
 writer.save()
 
