@@ -327,26 +327,27 @@ for daySlct in range(len(daysOfWeek)):
     dicts = {'rv_Connected': rv_Connected, 'rv_Energy': rv_Energy, 'rv_Duration': rv_Duration, 'rv_Sparrow': rv_Sparrow }
     rv_Dict[daySlct] = dicts
 
-#%%
-    
-import csv
-    
-fileName = 'exports\\PackSize-Flexibility\\rv_' + str(daySlct) + '-' + str(daysOfWeek[daySlct]) +'.csv'
-#outputFile = open(fileName, 'w')  
-#with open(fileName, 'w') as outputFile:  
-#   writer = csv.writer(outputFile)
-#   writer.writerows(outPxfmr)   
+#%% Output Random Variable
+
+import xlsxwriter
+
+for d in range(7):
+
+    fileName = 'exports\\PackSize-Flexibility\\' + str(d) + '-RandomVariable.xlsx'
+            
+    writer = pd.ExcelWriter(fileName, engine='xlsxwriter')
    
-# Create a Pandas Excel writer using XlsxWriter as the engine.
-writer = pd.ExcelWriter('pandas_multiple.xlsx', engine='xlsxwriter')
+    
+    pd_C = pd.DataFrame(rv_Dict[d]['rv_Connected'])
+    pd_D = pd.DataFrame(rv_Dict[d]['rv_Duration'])
+    pd_E = pd.DataFrame(rv_Dict[d]['rv_Energy'])
+    pd_S = pd.DataFrame(rv_Dict[d]['rv_Sparrow'])
+    
+    pd_C.to_excel(writer, sheet_name='rv_Connected')
+    pd_D.to_excel(writer, sheet_name='rv_Duration')
+    pd_E.to_excel(writer, sheet_name='rv_Energy')
+    pd_S.to_excel(writer, sheet_name='rv_Sparrow')
 
-# Write each dataframe to a different worksheet.
-rv_Connected.to_excel(writer, sheet_name='rv_Connected')
-rv_Energy.to_excel(writer, sheet_name='rv_Energy')
-rv_Duration.to_excel(writer, sheet_name='rv_Duration')
-rv_Sparrow.to_excel(writer, sheet_name='rv_Sparrow')
-
-# Close the Pandas Excel writer and output the Excel file.
 writer.save()
 
 #%% Calculate Markov Chain Transition Matrix
