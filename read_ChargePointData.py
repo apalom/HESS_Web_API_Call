@@ -18,7 +18,7 @@ import datetime
 
 # Raw Data
 #filePath = 'PackSize-Session-Details-Meter-with-Summary-20181211.csv';
-filePath = 'data/Lifetime-Session-Details.csv';
+filePath = 'data/Session-Details-Summary-20190404.csv';
 #filePath = 'data/Lifetime-UniqueDrivers-vs-Time.csv';
 
 # Import Data
@@ -57,6 +57,34 @@ data['Charging Time (hh:mm:ss)'] = pd.to_timedelta(data['Charging Time (hh:mm:ss
 
 dataHead = data.head(100);
 
+#%% Transit Corridor vs. Urban
+
+#%% Join Duplicate EVSEs
+
+EVSEs = list(set(data['EVSE ID']))
+df_EVSEs = pd.DataFrame([], index = EVSEs, columns = colNames)
+
+for chgr in list(set(data['EVSE ID'])):
+    df_Chgr = data[data['EVSE ID'] == chgr]
+    df_Chgr = df_Chgr[df_Chgr['End Date'] > datetime.datetime(1970,1,1)]
+    df_Chgr = df_Chgr.reset_index(drop=True)
+    
+    df_EVSEs.loc[chgr] = df_Chgr.iloc[0]
+    df_EVSEs.loc[chgr, 'Start Date'] = df_Chgr['End Date'].at[len(df_Chgr)-1]
+    df_EVSEs.loc[chgr, 'Total Duration (hh:mm:ss)'] = df_Chgr['End Date'].at[0] - df_Chgr['End Date'].at[len(df_Chgr)-1]
+    df_EVSEs.loc[chgr, 'Energy (kWh)'] = np.sum(df_Chgr['Energy (kWh)'])
+
+
+colEVSE = ['EVSE ID', 'Station Name', 'Port Number', 'Port Type', 
+               'Start Date', 'End Date', 'Latitude', 'Longitude']
+
+df_EVSEs = df_EVSEs.drop(['Plug In Event Id', 'Charging Time (hh:mm:ss)',
+                          'Ended By', 'User ID', 'Driver Postal Code'], axis=1)
+
+df_EVSEs = df_EVSEs.reset_index(drop=True)
+
+df_EVSEs.to_csv('df_EVSEs.csv')     
+  
 #%% Filter for Packsize
 
 dfPacksize = data[data['Station Name'].str.contains("PACKSIZE")]
