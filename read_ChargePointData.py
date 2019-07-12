@@ -74,7 +74,6 @@ for chgr in list(set(data['EVSE ID'])):
     df_EVSEs.loc[chgr, 'Total Duration (hh:mm:ss)'] = df_Chgr['End Date'].at[0] - df_Chgr['End Date'].at[len(df_Chgr)-1]
     df_EVSEs.loc[chgr, 'Energy (kWh)'] = np.sum(df_Chgr['Energy (kWh)'])
 
-
 colEVSE = ['EVSE ID', 'Station Name', 'Port Number', 'Port Type', 
                'Start Date', 'End Date', 'Latitude', 'Longitude']
 

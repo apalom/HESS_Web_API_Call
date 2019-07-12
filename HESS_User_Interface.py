@@ -11,7 +11,7 @@ timeMain = timeit.default_timer()
 
 #PackSize
 var_utility = str(1063)
-var_xfid = str(1003)
+var_xfid = str(1001) # 1001 PCKJ Bus
 
 '''
 #Bus DCFC
@@ -29,9 +29,9 @@ utc_offset = input('Enter UTC Offset [MST = 0600]: ')
 '''
 
 # Define user inputs
-var_startdate = '2018-06-20'
+var_startdate = '2018-03-01'
 var_startclock = '00:00'
-var_enddate = '2018-12-10'
+var_enddate = '2018-05-31'
 var_endclock = '00:00'
 utc_offset = '0800'
 
