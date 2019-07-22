@@ -139,4 +139,21 @@ plt.show()
 tEl = timeit.default_timer() - tST
 print('Plot Chgr Power: {0:.4f} sec'.format(tEl))
 
-#%% 
+#%% Driving Energy
+
+# 20 driving minutes each direction from 7am to 11:59p = 17 hrs
+# assume 30 min from leaving stop A to leaving stop B
+stEnergy = 126; #kWh
+route = 14.2; #miles
+#https://www.proterra.com/performance/range/
+eff = 0.5*(1.28+2.08); #kWh/mile operating efficiency
+typicalDay = np.median(dayKWH)
+typicalBus = typicalDay/3;
+
+#17 hours of operation, 30 min each direction, so 17 total round trips
+milesPerDay = route * 17;
+kWhperRoute = route * eff;
+kWhNeedPerBusDay = milesPerDay * eff;
+
+#Assume 3 busses on route
+kWhNeedPerDay = 3 * kWhNeedPerBusDay;

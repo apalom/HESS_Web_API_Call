@@ -14,12 +14,11 @@ import timeit
 import time
 import datetime
 
-
 #%% Import System Data
 
 # Raw Data
-path = 'exports\\data_XF1003-PackSize-2018-06-20to2018-12-10.csv'
-#path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
+#path = 'exports\\data_XF1003-PackSize-2018-06-20to2018-12-10.csv'
+path = 'exports\\data_XF1001_Bus-2017-12-15to2018-01-15.csv'
 
 # Import Data
 dataRaw = pd.read_csv(path)
@@ -141,7 +140,7 @@ minVal = int(qE_low + (5 - qE_low) % 5) - 5
 binEdges = np.arange(minVal, maxVal, 1)
 numBins = int(np.sqrt(len(seshEnergy1)));
 
-n, bins, patches = plt.hist(seshEnergy1.KWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e');
+n, bins, patches = plt.hist(seshEnergy1.KWH, bins=binEdges, density=True, rwidth=0.75, color='green');
 
 plt.xlabel('Energy (kWh)')
 #plt.xticks(np.arange(minVal, maxVal, 5))
@@ -165,6 +164,7 @@ binEdges = np.arange(minVal, maxVal, 1)
 numBins = int(np.sqrt(len(seshTime1)));
 
 n, bins, patches = plt.hist(seshTime1.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727', cumulative=False);
+#n, bins, patches = plt.hist(dfSeshEnergy.TIME, bins=binEdges, density=True, rwidth=0.75, color='#912727', cumulative=False);
 
 plt.xlabel('Minutes')
 #plt.xticks(np.arange(0,maxBin+1,1))
@@ -172,6 +172,7 @@ plt.ylabel('Frequency')
 plt.title('Session Duration')
 
 print('Mean: ', np.mean(seshTime1.TIME), ' | Std: ', np.std(seshTime1.TIME))
+#print('Mean: ', np.mean(dfSeshEnergy.TIME), ' | Std: ', np.std(dfSeshEnergy.TIME))
 
 #%% Calculate minute Energy
 
@@ -182,23 +183,29 @@ minKWH = np.zeros((len(allEnergy),1))
 for i in range(len(allEnergy)-1):
     minKWH[i] = allEnergy[i+1] - allEnergy[i]
 
+minKWH = pd.DataFrame(minKWH, columns=['Value'])
 
 #%% Plot minKWH Histogram
 
 import matplotlib.pyplot as plt
 
-#maxBin = np.ceil(np.max(seshKWH)) + 0.5;
-minKWH = minKWH[np.where( minKWH > 0.5 )];
-maxBin = 10;
+##maxBin = np.ceil(np.max(seshKWH)) + 0.5;
+#qT_high = minKWH.quantile(0.9545)[0]; #remove 2 std dev outlier
+#qT_low = minKWH.quantile(1-0.9545)[0]; #remove 2 std dev outlier
+#
+minKWH = minKWH.loc[minKWH.Value > 0.5]
+#minKWH = minKWH.loc[minKWH.Value < qT_high]
+maxBin = 8;
 binEdges = np.arange(0,maxBin,0.5)
 
-n, bins, patches = plt.hist(minKWH, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
+n, bins, patches = plt.hist(minKWH.Value, bins=binEdges, density=True, rwidth=0.75, color='#607c8e')
 
 plt.xlabel('Energy (kWh)')
 plt.xticks(np.arange(0,maxBin+1,1))
 plt.ylabel('Frequency')
 plt.title('Energy Per Minute')
 
+print('Mean: ', np.mean(minKWH.Value), ' | Std: ', np.std(minKWH.Value))
 
 #%% Sessions & Energy Per Day
 
